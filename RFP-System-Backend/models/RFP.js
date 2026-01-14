@@ -33,6 +33,6 @@ const rfpSchema = new mongoose.Schema({
         type: Date,
         default: Date.now
     }
-});
+}, { strict: false });
 
 export default mongoose.model('RFP', rfpSchema);

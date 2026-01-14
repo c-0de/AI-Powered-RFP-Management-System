@@ -138,6 +138,29 @@ function RFPCreate() {
                                             Confirm & Save
                                         </button>
                                     </div>
+
+                                    {/* Dynamic Fields Section */}
+                                    {(() => {
+                                        const standardFields = ['title', 'description', 'items', 'budget', 'currency', 'deadline', 'time', 'date', '_id', 'status', 'createdAt', 'updatedAt', 'selectedVendors', '__v'];
+                                        const dynamicKeys = Object.keys(generatedRFP).filter(key => !standardFields.includes(key) && generatedRFP[key] !== null);
+
+                                        if (dynamicKeys.length === 0) return null;
+
+                                        return (
+                                            <div className="pt-4 border-t border-slate-100">
+                                                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3 block">Additional Details</label>
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                    {dynamicKeys.map(key => (
+                                                        <div key={key}>
+                                                            <label className="text-xs text-slate-400 capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}</label>
+                                                            <p className="text-sm font-medium text-slate-900">{typeof generatedRFP[key] === 'object' ? JSON.stringify(generatedRFP[key]) : generatedRFP[key].toString()}</p>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        );
+                                    })()}
+
                                 </div>
                             </div>
                         </div>
@@ -173,7 +196,7 @@ function RFPCreate() {
                     </div>
                 )}
             </div>
-        </div>
+        </div >
     );
 }
 

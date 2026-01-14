@@ -18,7 +18,8 @@
     "imap-simple": "^5.1.0",
     "mailparser": "^3.6.4",
     "mongoose": "^8.0.3",
-    "nodemailer": "^6.9.7"
+    "nodemailer": "^6.9.7",
+    "nunjucks": "^3.2.4"
   },
   "devDependencies": {
     "nodemon": "^3.0.2"

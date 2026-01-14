@@ -1,8 +1,15 @@
 import { GoogleGenAI } from '@google/genai';
 import Groq from 'groq-sdk';
 import dotenv from 'dotenv';
+import nunjucks from 'nunjucks';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 dotenv.config();
+
+// Fix __dirname for ES Modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Configuration
 const LLM_PROVIDER = process.env.LLM ? process.env.LLM.toUpperCase() : 'GOOGLE';
@@ -12,6 +19,9 @@ const GROQ_API_KEY = process.env.GROQ_API_KEY;
 const GROQ_MODEL = process.env.GROQ_MODEL || "llama-3.1-8b-instant";
 
 console.log(`Initializing AI Service with Provider: ${LLM_PROVIDER}`);
+
+// Configure Nunjucks
+nunjucks.configure(path.join(__dirname, '../prompts'), { autoescape: true });
 
 // Clients
 let googleAi, groqAi;
@@ -41,17 +51,30 @@ const cleanJson = (text) => {
 };
 
 // Helper: Unified Generation Function
-const generateText = async (prompt) => {
+const generateText = async (systemPrompt, userPrompt) => {
     try {
         if (LLM_PROVIDER === 'GOOGLE') {
+            // For Google GenAI, system instructions can be passed in config
+            // Or if strict role separation is needed in contents
             const result = await googleAi.models.generateContent({
                 model: GEMINI_MODEL,
-                contents: prompt
+                config: {
+                    systemInstruction: {
+                        parts: [{ text: systemPrompt }]
+                    }
+                },
+                contents: [{
+                    role: 'user',
+                    parts: [{ text: userPrompt }]
+                }]
             });
             return result.text;
         } else if (LLM_PROVIDER === 'GROQ') {
             const completion = await groqAi.chat.completions.create({
-                messages: [{ role: "user", content: prompt }],
+                messages: [
+                    { role: "system", content: systemPrompt },
+                    { role: "user", content: userPrompt }
+                ],
                 model: GROQ_MODEL,
             });
             return completion.choices[0]?.message?.content || "";
@@ -66,55 +89,38 @@ const generateText = async (prompt) => {
 
 export const parseRFPRequirement = async (text) => {
     try {
-        const prompt = `
-      You are a strict data extraction assistant. 
-      Extract details from the procurement request text into a valid, standard JSON object.
-      
-      Rules:
-      1. Return ONLY the JSON object. No intro text, no markdown formatting.
-      2. Strict JSON only (RFC 8259). No trailing commas. No comments.
-      3. Keys must be quoted.
-      
-      Fields to extract:
-      - title (short summary)
-      - description (original text)
-      - items (array of objects with itemName, quantity, specs)
-      - budget (number, null if missing)
-      - currency (string, e.g. "USD")
-      - deadline (YYYY-MM-DD format if available, else null)
-      
-      Request: "${text}"
-    `;
+        const systemPrompt = nunjucks.render('rfp_extraction_system.jinja');
+        const userPrompt = nunjucks.render('rfp_extraction_user.jinja', { text });
 
-        const responseText = await generateText(prompt);
-        return JSON.parse(cleanJson(responseText));
+        const responseText = await generateText(systemPrompt, userPrompt);
+        const parsedData = JSON.parse(cleanJson(responseText));
+
+        // Logic to calculate deadline if date is missing but time (days) is available
+        if (!parsedData.date && !parsedData.deadline && parsedData.time) {
+            const days = parseInt(parsedData.time);
+            if (!isNaN(days)) {
+                const deadlineDate = new Date();
+                deadlineDate.setDate(deadlineDate.getDate() + days);
+                parsedData.deadline = deadlineDate.toISOString(); // Store as ISO string
+            }
+        } else if (parsedData.date) {
+            // Normalize 'date' field from prompt to 'deadline' field for model/frontend
+            parsedData.deadline = parsedData.date;
+        }
+
+        return parsedData;
     } catch (error) {
         console.error("AI Parsing Error:", error);
-        console.error("Response Text was:", await generateText(prompt).catch(e => "Error regenerating")); // This is risky, don't regenerate in catch
         throw new Error("Failed to parse RFP requirements: " + error.message);
     }
 };
 
 export const parseVendorResponse = async (emailBody) => {
     try {
-        const prompt = `
-      You are a strict data extraction assistant.
-      Extract details from the vendor proposal email into a valid, standard JSON object.
-      
-      Rules:
-      1. Return ONLY the JSON object.
-      2. Strict JSON (No trailing commas, no comments).
-      
-      Fields:
-      - totalPrice (number)
-      - deliveryTime (string)
-      - warranty (string)
-      - lineItems (array of objects with itemName, price, comments)
-      
-      Email: "${emailBody}"
-    `;
+        const systemPrompt = nunjucks.render('vendor_response_system.jinja');
+        const userPrompt = nunjucks.render('vendor_response_user.jinja', { emailBody });
 
-        const responseText = await generateText(prompt);
+        const responseText = await generateText(systemPrompt, userPrompt);
         return JSON.parse(cleanJson(responseText));
     } catch (error) {
         console.error("AI Parsing Error:", error);
@@ -124,23 +130,17 @@ export const parseVendorResponse = async (emailBody) => {
 
 export const compareProposals = async (rfp, proposals) => {
     try {
-        const prompt = `
-      Compare these proposals for the RFP: "${rfp.title}".
-      
-      RFP Budget: ${rfp.budget}
-      
-      Proposals:
-      ${JSON.stringify(proposals.map(p => ({
+        const proposalsJson = JSON.stringify(proposals.map(p => ({
             vendor: p.vendor.name,
             totalPrice: p.extractedData.totalPrice,
             delivery: p.extractedData.deliveryTime,
             warranty: p.extractedData.warranty
-        })))}
-      
-      Provide a brief recommendation on which vendor to choose and why. Return a plain text summary.
-    `;
+        })));
 
-        return await generateText(prompt);
+        const systemPrompt = nunjucks.render('proposal_comparison_system.jinja');
+        const userPrompt = nunjucks.render('proposal_comparison_user.jinja', { rfp, proposals_json: proposalsJson });
+
+        return await generateText(systemPrompt, userPrompt);
     } catch (error) {
         console.error("AI Comparison Error:", error);
         throw new Error("Failed to compare proposals: " + error.message);

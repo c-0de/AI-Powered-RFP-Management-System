@@ -9,9 +9,9 @@ const router = express.Router();
 // Get all RFPs
 router.get('/', async (req, res) => {
     try {
-        // const rfps = await RFP.find().sort({ createdAt: -1 });
-        // res.json(rfps);
-        res.json([]);
+        const rfps = await RFP.find().sort({ createdAt: -1 });
+        res.json(rfps);
+        // res.json([]);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -20,10 +20,10 @@ router.get('/', async (req, res) => {
 // Get single RFP
 router.get('/:id', async (req, res) => {
     try {
-        // const rfp = await RFP.findById(req.params.id).populate('selectedVendors');
-        // if (!rfp) return res.status(404).json({ message: 'RFP not found' });
-        // res.json(rfp);
-        res.status(404).json({ message: 'RFP DB disabled' });
+        const rfp = await RFP.findById(req.params.id).populate('selectedVendors');
+        if (!rfp) return res.status(404).json({ message: 'RFP not found' });
+        res.json(rfp);
+        // res.status(404).json({ message: 'RFP DB disabled' });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -37,7 +37,6 @@ router.post('/generate', async (req, res) => {
     try {
         const structuredData = await parseRFPRequirement(description);
         // Create new RFP in draft mode
-        /*
         const newRFP = new RFP({
             ...structuredData,
             description: description, // Save original text
@@ -47,8 +46,8 @@ router.post('/generate', async (req, res) => {
         // Don't save yet, let user review? Or save as draft? Let's save as draft.
         const savedRFP = await newRFP.save();
         res.status(201).json(savedRFP);
-        */
-        res.status(201).json({ ...structuredData, _id: "dummy_id_no_db", description, status: 'Draft' });
+
+        // res.status(201).json({ ...structuredData, _id: "dummy_id_no_db", description, status: 'Draft' });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }

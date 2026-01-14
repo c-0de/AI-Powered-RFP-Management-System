@@ -16,11 +16,9 @@ app.use(cors());
 app.use(express.json());
 
 // Database Connection
-/*
-mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/rfp-system')
+mongoose.connect(process.env.MONGO_CONNECTIONSTRING)
     .then(() => console.log('MongoDB Connected'))
     .catch(err => console.error('MongoDB Connection Error:', err));
-*/
 
 // Routes
 app.use('/api/rfps', rfpRoutes);
