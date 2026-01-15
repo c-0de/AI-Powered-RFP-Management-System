@@ -10,6 +10,7 @@ function ComparisonView() {
     const [recommendation, setRecommendation] = useState('');
     const [loadingComparison, setLoadingComparison] = useState(false);
     const [selectedVendors, setSelectedVendors] = useState([]);
+    const [selectedProposal, setSelectedProposal] = useState(null);
 
     useEffect(() => {
         fetchData();
@@ -79,6 +80,8 @@ function ComparisonView() {
 
     return (
         <div className="space-y-8">
+            {/* ... Header and other existing code ... */}
+
             {/* Header */}
             <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
                 <div className="md:flex md:items-center md:justify-between">
@@ -155,33 +158,185 @@ function ComparisonView() {
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {proposals.map(p => (
-                            <div key={p._id} className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                                <div className="p-5 border-b border-slate-100">
+                            <div
+                                key={p._id}
+                                onClick={() => setSelectedProposal(p)}
+                                className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden cursor-pointer hover:shadow-md transition-shadow ring-1 ring-transparent hover:ring-blue-200"
+                            >
+                                <div className="p-5 border-b border-slate-100 bg-slate-50/50">
                                     <h3 className="font-semibold text-lg text-slate-900">{p.vendor.companyName}</h3>
-                                    <p className="text-xs text-slate-500 mt-1">Received: {new Date(p.receivedAt).toLocaleString()}</p>
+                                    <div className="flex justify-between items-center mt-2">
+                                        <p className="text-xs text-slate-500">Received: {new Date(p.receivedAt).toLocaleDateString()}</p>
+                                        <span className="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">View Details</span>
+                                    </div>
                                 </div>
                                 <div className="p-5 space-y-3">
                                     <div className="flex justify-between items-center">
                                         <span className="text-sm text-slate-500">Total Price</span>
-                                        <span className="text-lg font-semibold text-slate-900">${p.extractedData.totalPrice.toLocaleString()}</span>
+                                        <span className="text-lg font-semibold text-slate-900">${p.totalPrice?.toLocaleString() || 0}</span>
                                     </div>
                                     <div className="flex justify-between items-center">
                                         <span className="text-sm text-slate-500">Delivery</span>
-                                        <span className="text-sm font-medium text-slate-900">{p.extractedData.deliveryTime}</span>
+                                        <span className="text-sm font-medium text-slate-900">{p.deliveryTime}</span>
                                     </div>
                                     <div className="flex justify-between items-center">
                                         <span className="text-sm text-slate-500">Warranty</span>
-                                        <span className="text-sm font-medium text-slate-900">{p.extractedData.warranty}</span>
+                                        <span className="text-sm font-medium text-slate-900">{p.warranty}</span>
                                     </div>
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-sm text-slate-500">Validity</span>
+                                        <span className="text-sm font-medium text-slate-900">{p.validity_period || 'N/A'}</span>
+                                    </div>
+
+                                    {/* Key Highlights Preview */}
+                                    {p.key_highlights && p.key_highlights.length > 0 && (
+                                        <div className="pt-3 border-t border-slate-100">
+                                            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Key Highlights</p>
+                                            <ul className="list-disc pl-4 space-y-1">
+                                                {p.key_highlights.slice(0, 3).map((point, idx) => (
+                                                    <li key={idx} className="text-xs text-slate-700 line-clamp-1">{point}</li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
                                 </div>
-                                {/* <div className="px-5 py-3 bg-slate-50 border-t border-slate-100 text-xs text-slate-500">
-                   ID: {p._id}
-                </div> */}
                             </div>
                         ))}
                     </div>
                 )}
             </div>
+
+            {/* Proposal Detail Modal */}
+            {selectedProposal && (
+                <div className="fixed inset-0 z-[100] overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+                    {/* Backdrop */}
+                    <div
+                        className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity"
+                        onClick={() => setSelectedProposal(null)}
+                    ></div>
+
+                    {/* Modal Panel - Centered */}
+                    <div className="flex min-h-full items-center justify-center p-4 text-center">
+                        <div className="relative transform overflow-hidden rounded-xl bg-white text-left shadow-2xl transition-all w-full max-w-3xl border border-slate-200">
+
+                            {/* Header */}
+                            <div className="bg-white px-6 py-4 border-b border-slate-100 flex justify-between items-center sticky top-0 z-10">
+                                <h3 className="text-xl font-bold text-slate-900" id="modal-title">
+                                    {selectedProposal.vendor.companyName}
+                                </h3>
+                                <button
+                                    onClick={() => setSelectedProposal(null)}
+                                    className="rounded-full p-1 hover:bg-slate-100 transition-colors"
+                                >
+                                    <svg className="h-6 w-6 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+
+                            {/* Scrollable Content */}
+                            <div className="px-6 py-6 max-h-[70vh] overflow-y-auto">
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 bg-slate-50 p-4 rounded-lg border border-slate-100">
+                                    <div>
+                                        <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">Total Price</p>
+                                        <p className="text-lg font-semibold text-slate-900">${selectedProposal.totalPrice?.toLocaleString() || 0}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">Delivery</p>
+                                        <p className="text-sm font-medium text-slate-900">{selectedProposal.deliveryTime}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">Warranty</p>
+                                        <p className="text-sm font-medium text-slate-900">{selectedProposal.warranty}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">Validity</p>
+                                        <p className="text-sm font-medium text-slate-900">{selectedProposal.validity_period || 'N/A'}</p>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-6">
+                                    {/* Key Highlights */}
+                                    {selectedProposal.key_highlights && selectedProposal.key_highlights.length > 0 && (
+                                        <div>
+                                            <h4 className="text-sm font-bold text-slate-900 uppercase tracking-wide mb-3 flex items-center">
+                                                <svg className="w-4 h-4 mr-2 text-yellow-500" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
+                                                Key Highlights
+                                            </h4>
+                                            <ul className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                                {selectedProposal.key_highlights.map((point, idx) => (
+                                                    <li key={idx} className="flex items-start text-sm text-slate-700 bg-yellow-50/50 p-2 rounded border border-yellow-100">
+                                                        <span className="mr-2 text-yellow-500">•</span>
+                                                        {point}
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
+
+                                    {/* Full Proposal Body */}
+                                    {selectedProposal.proposal && (
+                                        <div>
+                                            <h4 className="text-sm font-bold text-slate-900 uppercase tracking-wide mb-2">Original Proposal</h4>
+                                            <div className="text-sm text-slate-700 whitespace-pre-wrap bg-white p-4 rounded-lg border border-slate-200 leading-relaxed max-h-60 overflow-y-auto shadow-inner">
+                                                {selectedProposal.proposal}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Requirements Analysis */}
+                                    {selectedProposal.requirements_analysis && (
+                                        <div>
+                                            <h4 className="text-sm font-bold text-slate-900 uppercase tracking-wide mb-2">Technical Analysis</h4>
+                                            <div className="text-sm text-slate-700 whitespace-pre-wrap bg-blue-50 p-4 rounded-lg border border-blue-100 leading-relaxed">
+                                                {selectedProposal.requirements_analysis}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Line Items Table */}
+                                    {selectedProposal.lineItems && selectedProposal.lineItems.length > 0 && (
+                                        <div>
+                                            <h4 className="text-sm font-bold text-slate-900 uppercase tracking-wide mb-2">Line Items</h4>
+                                            <div className="overflow-x-auto ring-1 ring-slate-200 rounded-lg">
+                                                <table className="min-w-full divide-y divide-slate-200">
+                                                    <thead className="bg-slate-50">
+                                                        <tr>
+                                                            <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">Item</th>
+                                                            <th className="px-4 py-3 text-right text-xs font-medium text-slate-500 uppercase">Price</th>
+                                                            <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">Note</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody className="bg-white divide-y divide-slate-200">
+                                                        {selectedProposal.lineItems.map((item, idx) => (
+                                                            <tr key={idx}>
+                                                                <td className="px-4 py-3 text-sm text-slate-900">{item.itemName}</td>
+                                                                <td className="px-4 py-3 text-sm text-slate-600 text-right">${item.price?.toLocaleString()}</td>
+                                                                <td className="px-4 py-3 text-sm text-slate-500">{item.comments}</td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Footer */}
+                            <div className="bg-slate-50 px-6 py-4 flex flex-row-reverse border-t border-slate-100">
+                                <button
+                                    type="button"
+                                    onClick={() => setSelectedProposal(null)}
+                                    className="w-full inline-flex justify-center rounded-lg border border-slate-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm"
+                                >
+                                    Close
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* AI Comparison */}
             {proposals.length > 0 && (

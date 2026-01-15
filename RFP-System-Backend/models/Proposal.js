@@ -11,17 +11,21 @@ const proposalSchema = new mongoose.Schema({
         ref: 'Vendor',
         required: true
     },
-    emailContent: String, // Raw email body
-    extractedData: {
-        totalPrice: Number,
-        deliveryTime: String,
-        warranty: String,
-        lineItems: [{
-            itemName: String,
-            price: Number,
-            comments: String
-        }]
-    },
+    proposal: String, // Cleaned email body (renamed from emailContent)
+
+    // Flattened AI Extracted Fields
+    totalPrice: Number,
+    deliveryTime: String,
+    warranty: String,
+    validity_period: String,
+    key_highlights: [String], // Array of important bullet points
+    requirements_analysis: String, // Analysis of how requirements are met
+    lineItems: [{
+        itemName: String,
+        price: Number,
+        comments: String
+    }],
+
     aiSummary: String,
     score: Number,
     receivedAt: {

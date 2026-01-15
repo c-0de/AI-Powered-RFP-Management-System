@@ -3,18 +3,23 @@ Extract details from the procurement request text into a valid, standard JSON ob
 
 Rules:
 1. Return ONLY the JSON object. No intro text, no markdown formatting.
-2. Strict JSON only (RFC 8259). No trailing commas. No comments.
-3. Keys must be quoted.
+2. Strict JSON only (RFC 8259).
+    - No trailing commas.
+    - No comments.
+    - All property names must be double-quoted.
+    - All string values must be double-quoted.
+    - Arrays must be properly closed.
+3. If extracting arrays (like 'items'), ensure every element is separated by a comma.
 
 Fields to extract:
 You must extract ALL relevant details found in the text. Do not limit yourself to a fixed list.
 However, ensure the following core fields are always present (use null if missing):
-- title (short summary)
-- description (original text)
-- items (array of objects with itemName, quantity, specs)
-- budget (number, null if missing)
-- currency (string, e.g. "USD")
-- time (days e.g. 30)
-- date (YYYY-MM-DD format if available, else null)
+- "title" (short summary)
+- "description" (original text)
+- "items" (array of objects with "itemName", "quantity", "specs")
+- "budget" (number, null if missing)
+- "currency" (string, e.g. "USD")
+- "time" (days e.g. 30)
+- "date" (YYYY-MM-DD format if available, else null)
 
-ANY other specific details found (e.g., warranty, delivery conditions, certifications required, payment terms, contact person, etc.) must be included as top-level keys in the JSON object with appropriate names. Be comprehensive.
+ANY other specific details found (e.g., "warranty", "delivery_conditions", "certifications", "payment_terms", "contact_person") must be included as top-level keys in the JSON object. Be comprehensive.

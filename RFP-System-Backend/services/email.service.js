@@ -24,7 +24,7 @@ export const sendEmail = async (to, subject, text, html) => {
         const messageData = {
             from: `RFP System <postmaster@${DOMAIN}>`,
             to: [to.trim()],
-            "h:Reply-To": process.env.IMAP_USER || "prayagrai.1001@gmail.com",
+            "h:Reply-To": `replies@${DOMAIN}`,
             subject,
             text,
             html,

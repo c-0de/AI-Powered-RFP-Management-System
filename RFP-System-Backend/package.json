@@ -20,6 +20,7 @@
     "mailgun.js": "^12.6.1",
     "mailparser": "^3.6.4",
     "mongoose": "^8.0.3",
+    "multer": "^2.0.2",
     "nodemailer": "^6.9.7",
     "nunjucks": "^3.2.4"
   },

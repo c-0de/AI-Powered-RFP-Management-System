@@ -4,9 +4,15 @@ Extract details from the vendor proposal email into a valid, standard JSON objec
 Rules:
 1. Return ONLY the JSON object.
 2. Strict JSON (No trailing commas, no comments).
+3. IGNORE any quoted email history (lines starting with >, or "On ... wrote"). Only analyze the new response text.
+4. If fields like Proposal Body or Requirements Analysis are not explicitly stated, infer them from the context of the new response ONLY. Do NOT use the quoted original email.
 
 Fields:
-- totalPrice (number)
+- totalPrice (number: Use 0 if not specified. Do NOT use strings like "N/A")
 - deliveryTime (string)
 - warranty (string)
-- lineItems (array of objects with itemName, price, comments)
+- validity_period (string: How long this quote is valid for)
+- key_highlights (array of strings: 3-5 short, punchy bullet points covering the most important unique selling points or details)
+- proposal_body (string: The main narrative of the proposal)
+- requirements_analysis (string: Specific details on how they meet the technical requirements)
+- lineItems (array of objects with itemName, price (number: Use 0 if unknown), comments)

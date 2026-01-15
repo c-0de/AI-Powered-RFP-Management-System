@@ -88,11 +88,12 @@ const generateText = async (systemPrompt, userPrompt) => {
 };
 
 export const parseRFPRequirement = async (text) => {
+    let responseText = "";
     try {
         const systemPrompt = nunjucks.render('rfp_extraction_system.jinja');
         const userPrompt = nunjucks.render('rfp_extraction_user.jinja', { text });
 
-        const responseText = await generateText(systemPrompt, userPrompt);
+        responseText = await generateText(systemPrompt, userPrompt);
         const parsedData = JSON.parse(cleanJson(responseText));
 
         // Logic to calculate deadline if date is missing but time (days) is available
@@ -111,20 +112,59 @@ export const parseRFPRequirement = async (text) => {
         return parsedData;
     } catch (error) {
         console.error("AI Parsing Error:", error);
-        throw new Error("Failed to parse RFP requirements: " + error.message);
+        console.error("Raw AI Response:", responseText); // Log actual AI response
+        // Return a safe fallback object to prevent system crash
+        return {
+            title: "RFP Extraction Failed",
+            description: text || "Could not parse RFP details. Please enter manually.",
+            items: [],
+            budget: null,
+            currency: "USD",
+            time: null,
+            deadline: null,
+            parsingError: true
+        };
     }
 };
 
 export const parseVendorResponse = async (emailBody) => {
+    let responseText = "";
     try {
         const systemPrompt = nunjucks.render('vendor_response_system.jinja');
         const userPrompt = nunjucks.render('vendor_response_user.jinja', { emailBody });
 
-        const responseText = await generateText(systemPrompt, userPrompt);
-        return JSON.parse(cleanJson(responseText));
+        responseText = await generateText(systemPrompt, userPrompt);
+        let parsedData = JSON.parse(cleanJson(responseText));
+
+        // Sanitize Data (Ensure numbers for prices)
+        if (parsedData.totalPrice && typeof parsedData.totalPrice !== 'number') {
+            const parsedPrice = parseFloat(parsedData.totalPrice);
+            parsedData.totalPrice = isNaN(parsedPrice) ? 0 : parsedPrice;
+        }
+
+        if (Array.isArray(parsedData.lineItems)) {
+            parsedData.lineItems = parsedData.lineItems.map(item => {
+                let price = item.price;
+                if (typeof price !== 'number') {
+                    price = parseFloat(price);
+                    if (isNaN(price)) price = 0;
+                }
+                return { ...item, price };
+            });
+        }
+
+        return parsedData;
     } catch (error) {
-        console.error("AI Parsing Error:", error);
-        throw new Error("Failed to parse vendor response: " + error.message);
+        console.error("AI Parsing Error (Vendor Response):", error);
+        console.error("Raw AI Response:", responseText);
+        // Fallback or rethrow? If this fails, the vendor process fails. 
+        // Better to throw but with more info, or return null? 
+        // If we return null, the caller might crash if expecting object.
+        // Let's return a basic object indicating failure.
+        return {
+            error: "Failed to parse vendor response",
+            originalText: emailBody
+        };
     }
 };
 
@@ -132,9 +172,9 @@ export const compareProposals = async (rfp, proposals) => {
     try {
         const proposalsJson = JSON.stringify(proposals.map(p => ({
             vendor: p.vendor.companyName,
-            totalPrice: p.extractedData.totalPrice,
-            delivery: p.extractedData.deliveryTime,
-            warranty: p.extractedData.warranty
+            totalPrice: p.totalPrice,
+            delivery: p.deliveryTime,
+            warranty: p.warranty
         })));
 
         const systemPrompt = nunjucks.render('proposal_comparison_system.jinja');
