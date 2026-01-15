@@ -131,7 +131,7 @@ export const parseVendorResponse = async (emailBody) => {
 export const compareProposals = async (rfp, proposals) => {
     try {
         const proposalsJson = JSON.stringify(proposals.map(p => ({
-            vendor: p.vendor.name,
+            vendor: p.vendor.companyName,
             totalPrice: p.extractedData.totalPrice,
             delivery: p.extractedData.deliveryTime,
             warranty: p.extractedData.warranty

@@ -1,7 +1,12 @@
 import mongoose from 'mongoose';
 
 const vendorSchema = new mongoose.Schema({
-    name: {
+    vendorCode: {
+        type: String,
+        required: true,
+        unique: true
+    },
+    companyName: {
         type: String,
         required: true
     },
@@ -10,9 +15,21 @@ const vendorSchema = new mongoose.Schema({
         required: true,
         unique: true
     },
-    contactPerson: String,
     phone: String,
-    category: [String],
+    location: String,
+    categories: [String],
+    rating: {
+        type: Number,
+        default: 0
+    },
+    onTimeDeliveryRate: Number,
+    responseSLAHours: Number,
+    certifications: [String],
+    paymentTermsSupported: [String],
+    active: {
+        type: Boolean,
+        default: true
+    },
     createdAt: {
         type: Date,
         default: Date.now

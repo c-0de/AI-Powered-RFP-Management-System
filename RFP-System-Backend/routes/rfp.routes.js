@@ -29,25 +29,49 @@ router.get('/:id', async (req, res) => {
     }
 });
 
-// Create RFP from Natural Language
+// Create new RFP
+router.post('/', async (req, res) => {
+    try {
+        const newRFP = new RFP(req.body);
+        const savedRFP = await newRFP.save();
+        res.status(201).json(savedRFP);
+    } catch (error) {
+        res.status(400).json({ message: error.message });
+    }
+});
+
+// Create RFP Analysis (Preview) from Natural Language
 router.post('/generate', async (req, res) => {
     const { description } = req.body;
     if (!description) return res.status(400).json({ message: 'Description is required' });
 
     try {
         const structuredData = await parseRFPRequirement(description);
-        // Create new RFP in draft mode
-        const newRFP = new RFP({
+
+        // Ensure specs is a string
+        if (structuredData.items && Array.isArray(structuredData.items)) {
+            structuredData.items = structuredData.items.map(item => {
+                if (Array.isArray(item.specs)) {
+                    return { ...item, specs: item.specs.join('\n') };
+                } else if (typeof item.specs === 'object' && item.specs !== null) {
+                    // Handle case where specs is an object (key-value pairs)
+                    const specsString = Object.entries(item.specs)
+                        .map(([key, value]) => `${key}: ${value}`)
+                        .join('\n');
+                    return { ...item, specs: specsString };
+                }
+                return item;
+            });
+        }
+
+        // Return preview data without saving
+        const previewRFP = {
             ...structuredData,
-            description: description, // Save original text
+            description: description,
             status: 'Draft'
-        });
+        };
 
-        // Don't save yet, let user review? Or save as draft? Let's save as draft.
-        const savedRFP = await newRFP.save();
-        res.status(201).json(savedRFP);
-
-        // res.status(201).json({ ...structuredData, _id: "dummy_id_no_db", description, status: 'Draft' });
+        res.json(previewRFP);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -70,7 +94,7 @@ router.post('/:id/send', async (req, res) => {
         // Send Emails
         const emailPromises = vendors.map(vendor => {
             const subject = `Request for Proposal: ${rfp.title}`;
-            const text = `Dear ${vendor.contactPerson || vendor.name},\n\nPlease find attached the details for our new RFP.\n\nDescription: ${rfp.description}\n\nBudget: ${rfp.currency} ${rfp.budget}\nDeadline: ${rfp.deadline}\n\nPlease reply to this email with your proposal.\n\nBest regards,\nProcurement Team`;
+            const text = `Dear ${vendor.companyName},\n\nPlease find attached the details for our new RFP.\n\nDescription: ${rfp.description}\n\nBudget: ${rfp.currency} ${rfp.budget}\nDeadline: ${rfp.deadline}\n\nPlease reply to this email with your proposal.\n\nBest regards,\nProcurement Team`;
 
             return sendEmail(vendor.email, subject, text, text); // Send HTML as text for now
         });

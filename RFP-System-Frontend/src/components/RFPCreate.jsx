@@ -21,8 +21,16 @@ function RFPCreate() {
         setLoading(false);
     };
 
-    const handleConfirm = () => {
-        navigate('/');
+    const handleConfirm = async () => {
+        if (!generatedRFP) return;
+
+        try {
+            await api.post('/rfps', generatedRFP);
+            navigate('/');
+        } catch (error) {
+            console.error("Failed to save RFP:", error);
+            alert("Failed to save RFP. Please try again.");
+        }
     };
 
     return (

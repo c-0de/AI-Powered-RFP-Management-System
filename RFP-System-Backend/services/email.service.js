@@ -1,32 +1,39 @@
-import nodemailer from 'nodemailer';
+import formData from 'form-data';
+import Mailgun from 'mailgun.js';
 import imaps from 'imap-simple';
 import dotenv from 'dotenv';
 import { simpleParser } from 'mailparser';
 
 dotenv.config();
 
-// Email Sender (SMTP)
-const transporter = nodemailer.createTransport({
-    host: process.env.EMAIL_HOST,
-    port: process.env.EMAIL_PORT,
-    secure: false, // true for 465, false for other ports
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-    },
+// Initialize Mailgun
+const mailgun = new Mailgun(formData);
+const mg = mailgun.client({
+    username: 'api',
+    key: process.env.MAILGUN_SENDING_API_KEY || process.env.MAILGUN_API_KEY,
 });
+
+const DOMAIN = process.env.MAILGUN_DOMAIN;
 
 export const sendEmail = async (to, subject, text, html) => {
     try {
-        const info = await transporter.sendMail({
-            from: `"RFP System" <${process.env.EMAIL_USER}>`,
-            to,
+        if (!DOMAIN) {
+            throw new Error("MAILGUN_DOMAIN is missing in .env");
+        }
+
+        const messageData = {
+            from: `RFP System <postmaster@${DOMAIN}>`,
+            to: [to.trim()],
+            "h:Reply-To": process.env.IMAP_USER || "prayagrai.1001@gmail.com",
             subject,
             text,
             html,
-        });
-        console.log("Message sent: %s", info.messageId);
-        return info;
+        };
+
+
+        const msg = await mg.messages.create(DOMAIN, messageData);
+        console.log("Message sent:", msg);
+        return msg;
     } catch (error) {
         console.error("Error sending email:", error);
         throw error;
@@ -39,10 +46,11 @@ export const fetchEmails = async () => {
         imap: {
             user: process.env.IMAP_USER,
             password: process.env.IMAP_PASS,
-            host: process.env.IMAP_HOST,
-            port: process.env.IMAP_PORT,
+            host: process.env.IMAP_HOST || 'imap.gmail.com',
+            port: parseInt(process.env.IMAP_PORT) || 993,
             tls: true,
             authTimeout: 3000,
+            tlsOptions: { rejectUnauthorized: false } // Helpful for some dev environments
         },
     };
 
@@ -84,3 +92,4 @@ export const fetchEmails = async () => {
         return [];
     }
 };
+

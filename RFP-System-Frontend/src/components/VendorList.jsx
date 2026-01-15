@@ -3,7 +3,14 @@ import api from '../api';
 
 function VendorList() {
     const [vendors, setVendors] = useState([]);
-    const [newVendor, setNewVendor] = useState({ name: '', email: '', contactPerson: '', category: '' });
+    const [newVendor, setNewVendor] = useState({
+        vendorCode: '',
+        companyName: '',
+        email: '',
+        phone: '',
+        location: '',
+        categories: ''
+    });
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
@@ -23,11 +30,23 @@ function VendorList() {
         e.preventDefault();
         setLoading(true);
         try {
-            await api.post('/vendors', { ...newVendor, category: newVendor.category.split(',') });
-            setNewVendor({ name: '', email: '', contactPerson: '', category: '' });
+            const payload = {
+                ...newVendor,
+                categories: newVendor.categories.split(',').map(c => c.trim()).filter(c => c)
+            };
+            await api.post('/vendors', payload);
+            setNewVendor({
+                vendorCode: '',
+                companyName: '',
+                email: '',
+                phone: '',
+                location: '',
+                categories: ''
+            });
             fetchVendors();
         } catch (error) {
             alert("Error adding vendor");
+            console.error(error);
         }
         setLoading(false);
     };
@@ -48,12 +67,22 @@ function VendorList() {
                         <h2 className="text-lg font-semibold text-slate-800 mb-4">Add New Vendor</h2>
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Vendor Code</label>
+                                <input
+                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                                    placeholder="e.g. VEN-001"
+                                    value={newVendor.vendorCode}
+                                    onChange={e => setNewVendor({ ...newVendor, vendorCode: e.target.value })}
+                                    required
+                                />
+                            </div>
+                            <div>
                                 <label className="block text-sm font-medium text-slate-700 mb-1">Company Name</label>
                                 <input
                                     className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                                    placeholder="e.g. Acme Corp"
-                                    value={newVendor.name}
-                                    onChange={e => setNewVendor({ ...newVendor, name: e.target.value })}
+                                    placeholder="e.g. TechNova Solutions"
+                                    value={newVendor.companyName}
+                                    onChange={e => setNewVendor({ ...newVendor, companyName: e.target.value })}
                                     required
                                 />
                             </div>
@@ -69,12 +98,21 @@ function VendorList() {
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">Contact Person</label>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Phone</label>
                                 <input
                                     className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                                    placeholder="John Doe"
-                                    value={newVendor.contactPerson}
-                                    onChange={e => setNewVendor({ ...newVendor, contactPerson: e.target.value })}
+                                    placeholder="+1 234 567 890"
+                                    value={newVendor.phone}
+                                    onChange={e => setNewVendor({ ...newVendor, phone: e.target.value })}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Location</label>
+                                <input
+                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                                    placeholder="City, Country"
+                                    value={newVendor.location}
+                                    onChange={e => setNewVendor({ ...newVendor, location: e.target.value })}
                                 />
                             </div>
                             <div>
@@ -82,8 +120,8 @@ function VendorList() {
                                 <input
                                     className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                                     placeholder="Hardware, Software (comma separated)"
-                                    value={newVendor.category}
-                                    onChange={e => setNewVendor({ ...newVendor, category: e.target.value })}
+                                    value={newVendor.categories}
+                                    onChange={e => setNewVendor({ ...newVendor, categories: e.target.value })}
                                 />
                             </div>
                             <button
@@ -113,30 +151,48 @@ function VendorList() {
                                     <div key={vendor._id} className="p-6 hover:bg-slate-50 transition-colors">
                                         <div className="flex items-start justify-between">
                                             <div>
-                                                <h3 className="text-lg font-medium text-slate-900">{vendor.name}</h3>
-                                                <div className="mt-1 flex items-center space-x-4 text-sm text-slate-500">
-                                                    <span className="flex items-center">
-                                                        <span className="mr-1.5 opacity-70">📧</span> {vendor.email}
-                                                    </span>
-                                                    {vendor.contactPerson && (
-                                                        <span className="flex items-center">
-                                                            <span className="mr-1.5 opacity-70">👤</span> {vendor.contactPerson}
+                                                <div className="flex items-center gap-2">
+                                                    <h3 className="text-lg font-medium text-slate-900">{vendor.companyName}</h3>
+                                                    {vendor.vendorCode && (
+                                                        <span className="text-xs font-mono bg-slate-100 text-slate-500 px-2 py-0.5 rounded">
+                                                            {vendor.vendorCode}
                                                         </span>
                                                     )}
                                                 </div>
-                                                {vendor.category && vendor.category.length > 0 && (
+                                                <div className="mt-1 flex flex-col sm:flex-row sm:items-center sm:space-x-4 text-sm text-slate-500">
+                                                    <span className="flex items-center">
+                                                        <span className="mr-1.5 opacity-70">📧</span> {vendor.email}
+                                                    </span>
+                                                    {vendor.phone && (
+                                                        <span className="flex items-center">
+                                                            <span className="mr-1.5 opacity-70">📞</span> {vendor.phone}
+                                                        </span>
+                                                    )}
+                                                    {vendor.location && (
+                                                        <span className="flex items-center">
+                                                            <span className="mr-1.5 opacity-70">📍</span> {vendor.location}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                {vendor.categories && vendor.categories.length > 0 && (
                                                     <div className="mt-3 flex flex-wrap gap-2">
-                                                        {vendor.category.map((cat, idx) => (
+                                                        {vendor.categories.map((cat, idx) => (
                                                             <span key={idx} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100">
                                                                 {cat}
                                                             </span>
                                                         ))}
                                                     </div>
                                                 )}
+                                                {/* Optional: Show rating or SLA if available */}
+                                                {(vendor.rating || vendor.responseSLAHours) && (
+                                                    <div className="mt-2 text-xs text-slate-400 flex gap-3">
+                                                        {vendor.rating && <span>⭐ {vendor.rating}/5</span>}
+                                                        {vendor.responseSLAHours && <span>⏱️ {vendor.responseSLAHours}h SLA</span>}
+                                                    </div>
+                                                )}
                                             </div>
                                             <button className="text-slate-400 hover:text-blue-600 transition-colors">
                                                 <span className="sr-only">Edit</span>
-                                                {/* Simple icon or logic can go here */}
                                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                                                 </svg>

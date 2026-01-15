@@ -130,7 +130,7 @@ function ComparisonView() {
                                         checked={selectedVendors.includes(v._id)}
                                         onChange={() => toggleVendor(v._id)}
                                     />
-                                    <span className="ml-3 block text-sm font-medium text-slate-700">{v.name}</span>
+                                    <span className="ml-3 block text-sm font-medium text-slate-700">{v.companyName}</span>
                                 </label>
                             ))}
                         </div>
@@ -157,7 +157,7 @@ function ComparisonView() {
                         {proposals.map(p => (
                             <div key={p._id} className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                                 <div className="p-5 border-b border-slate-100">
-                                    <h3 className="font-semibold text-lg text-slate-900">{p.vendor.name}</h3>
+                                    <h3 className="font-semibold text-lg text-slate-900">{p.vendor.companyName}</h3>
                                     <p className="text-xs text-slate-500 mt-1">Received: {new Date(p.receivedAt).toLocaleString()}</p>
                                 </div>
                                 <div className="p-5 space-y-3">
