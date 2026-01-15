@@ -1,6 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import api from '../api';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import toast from 'react-hot-toast';
+
+
 
 function ComparisonView() {
     const { id } = useParams();
@@ -11,6 +16,8 @@ function ComparisonView() {
     const [loadingComparison, setLoadingComparison] = useState(false);
     const [selectedVendors, setSelectedVendors] = useState([]);
     const [selectedProposal, setSelectedProposal] = useState(null);
+    const [isSending, setIsSending] = useState(false);
+    const [isSyncing, setIsSyncing] = useState(false);
 
     useEffect(() => {
         fetchData();
@@ -23,6 +30,11 @@ function ComparisonView() {
             setRfp(rfpRes.data);
             const propRes = await api.get(`/proposals/rfp/${id}`);
             setProposals(propRes.data);
+
+            // Mark as read if there are unread items
+            if (rfpRes.data.unreadProposalsCount > 0) {
+                await api.put(`/rfps/${id}/mark-read`);
+            }
         } catch (error) {
             console.error(error);
         }
@@ -34,22 +46,28 @@ function ComparisonView() {
     };
 
     const handleSendRFP = async () => {
+        setIsSending(true);
         try {
             await api.post(`/rfps/${id}/send`, { vendorIds: selectedVendors });
-            alert('RFP Sent!');
+            toast.success('RFP Sent!');
             fetchData();
         } catch (error) {
-            alert('Error sending RFP');
+            toast.error('Error sending RFP');
+        } finally {
+            setIsSending(false);
         }
     };
 
     const handleCheckEmails = async () => {
+        setIsSyncing(true);
         try {
             const res = await api.post('/proposals/check-emails');
-            alert(`Check complete. New proposals: ${res.data.newProposals}`);
+            toast.success(`Check complete. New proposals: ${res.data.newProposals}`);
             fetchData();
         } catch (error) {
-            alert('Error checking emails');
+            toast.error('Error checking emails');
+        } finally {
+            setIsSyncing(false);
         }
     };
 
@@ -103,12 +121,25 @@ function ComparisonView() {
                     <div className="mt-4 flex md:ml-4 md:mt-0">
                         <button
                             onClick={handleCheckEmails}
-                            className="inline-flex items-center px-4 py-2 bg-white border border-slate-300 rounded-lg shadow-sm text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+                            disabled={isSyncing}
+                            className="inline-flex items-center px-4 py-2 bg-white border border-slate-300 rounded-lg shadow-sm text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            <svg className="mr-2 -ml-1 h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                            </svg>
-                            Sync Emails
+                            {isSyncing ? (
+                                <>
+                                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-slate-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    Syncing...
+                                </>
+                            ) : (
+                                <>
+                                    <svg className="mr-2 -ml-1 h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                    </svg>
+                                    Sync Emails
+                                </>
+                            )}
                         </button>
                     </div>
                 </div>
@@ -139,10 +170,20 @@ function ComparisonView() {
                         </div>
                         <button
                             onClick={handleSendRFP}
-                            disabled={selectedVendors.length === 0}
-                            className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                            disabled={selectedVendors.length === 0 || isSending}
+                            className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center"
                         >
-                            Send Invitations ({selectedVendors.length})
+                            {isSending ? (
+                                <>
+                                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    Sending...
+                                </>
+                            ) : (
+                                `Send Invitations (${selectedVendors.length})`
+                            )}
                         </button>
                     </div>
                 </div>
@@ -177,15 +218,15 @@ function ComparisonView() {
                                     </div>
                                     <div className="flex justify-between items-center">
                                         <span className="text-sm text-slate-500">Delivery</span>
-                                        <span className="text-sm font-medium text-slate-900">{p.deliveryTime}</span>
+                                        <span className="text-sm font-medium text-slate-900 text-right truncate block max-w-[70%]" title={p.deliveryTime}>{p.deliveryTime}</span>
                                     </div>
                                     <div className="flex justify-between items-center">
                                         <span className="text-sm text-slate-500">Warranty</span>
-                                        <span className="text-sm font-medium text-slate-900">{p.warranty}</span>
+                                        <span className="text-sm font-medium text-slate-900 text-right truncate block max-w-[70%]" title={p.warranty}>{p.warranty}</span>
                                     </div>
                                     <div className="flex justify-between items-center">
                                         <span className="text-sm text-slate-500">Validity</span>
-                                        <span className="text-sm font-medium text-slate-900">{p.validity_period || 'N/A'}</span>
+                                        <span className="text-sm font-medium text-slate-900 text-right truncate block max-w-[70%]" title={p.validity_period || 'N/A'}>{p.validity_period || 'N/A'}</span>
                                     </div>
 
                                     {/* Key Highlights Preview */}
@@ -278,8 +319,32 @@ function ComparisonView() {
                                     {selectedProposal.proposal && (
                                         <div>
                                             <h4 className="text-sm font-bold text-slate-900 uppercase tracking-wide mb-2">Original Proposal</h4>
-                                            <div className="text-sm text-slate-700 whitespace-pre-wrap bg-white p-4 rounded-lg border border-slate-200 leading-relaxed max-h-60 overflow-y-auto shadow-inner">
-                                                {selectedProposal.proposal}
+                                            <div className="bg-white p-4 rounded-lg border border-slate-200 leading-relaxed max-h-96 overflow-y-auto shadow-inner prose prose-sm prose-slate max-w-none">
+                                                <ReactMarkdown
+                                                    remarkPlugins={[remarkGfm]}
+                                                    components={{
+                                                        h1: ({ node, ...props }) => <h1 className="text-xl font-bold mb-3 mt-4 text-slate-900 border-b pb-2" {...props} />,
+                                                        h2: ({ node, ...props }) => <h2 className="text-lg font-bold mb-2 mt-4 text-slate-900" {...props} />,
+                                                        h3: ({ node, ...props }) => <h3 className="text-base font-bold mb-2 mt-3 text-slate-900" {...props} />,
+                                                        p: ({ node, ...props }) => <p className="mb-3 text-slate-700 leading-relaxed last:mb-0" {...props} />,
+                                                        ul: ({ node, ...props }) => <ul className="list-disc pl-5 mb-3 space-y-1 text-slate-700" {...props} />,
+                                                        ol: ({ node, ...props }) => <ol className="list-decimal pl-5 mb-3 space-y-1 text-slate-700" {...props} />,
+                                                        li: ({ node, ...props }) => <li className="pl-1" {...props} />,
+                                                        blockquote: ({ node, ...props }) => <blockquote className="border-l-4 border-blue-500 pl-4 py-1 my-3 bg-slate-50 italic text-slate-600 rounded-r" {...props} />,
+                                                        pre: ({ node, ...props }) => <pre className="bg-slate-900 text-slate-50 p-3 rounded-lg mb-3 overflow-x-auto text-sm" {...props} />,
+                                                        code: ({ node, ...props }) => <code className="font-mono text-sm" {...props} />,
+                                                        a: ({ node, ...props }) => <a className="text-blue-600 hover:underline" {...props} />,
+                                                        strong: ({ node, ...props }) => <strong className="font-bold text-slate-900" {...props} />,
+                                                        table: ({ node, ...props }) => <div className="overflow-x-auto mb-4 border border-slate-200 rounded-lg"><table className="min-w-full divide-y divide-slate-200" {...props} /></div>,
+                                                        thead: ({ node, ...props }) => <thead className="bg-slate-50" {...props} />,
+                                                        th: ({ node, ...props }) => <th className="px-3 py-2 text-left text-xs font-medium text-slate-500 uppercase tracking-wider" {...props} />,
+                                                        tbody: ({ node, ...props }) => <tbody className="bg-white divide-y divide-slate-200" {...props} />,
+                                                        tr: ({ node, ...props }) => <tr className="hover:bg-slate-50" {...props} />,
+                                                        td: ({ node, ...props }) => <td className="px-3 py-2 text-sm text-slate-700 whitespace-pre-wrap" {...props} />,
+                                                    }}
+                                                >
+                                                    {selectedProposal.proposal}
+                                                </ReactMarkdown>
                                             </div>
                                         </div>
                                     )}

@@ -31,6 +31,10 @@ const proposalSchema = new mongoose.Schema({
     receivedAt: {
         type: Date,
         default: Date.now
+    },
+    isRead: {
+        type: Boolean,
+        default: false
     }
 });
 

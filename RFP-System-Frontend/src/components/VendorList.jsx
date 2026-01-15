@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../api';
+import toast from 'react-hot-toast';
 
 function VendorList() {
     const [vendors, setVendors] = useState([]);
@@ -43,9 +44,10 @@ function VendorList() {
                 location: '',
                 categories: ''
             });
+            toast.success('Vendor added successfully');
             fetchVendors();
         } catch (error) {
-            alert("Error adding vendor");
+            toast.error("Error adding vendor");
             console.error(error);
         }
         setLoading(false);

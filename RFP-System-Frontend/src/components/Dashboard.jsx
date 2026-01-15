@@ -60,9 +60,16 @@ function Dashboard() {
                                 <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(rfp.status)}`}>
                                     {rfp.status}
                                 </span>
-                                <span className="text-xs text-slate-400">
-                                    {new Date(rfp.createdAt).toLocaleDateString()}
-                                </span>
+                                <div className="flex items-center space-x-2">
+                                    {rfp.unreadProposalsCount > 0 && (
+                                        <span className="flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-600">
+                                            {rfp.unreadProposalsCount} New
+                                        </span>
+                                    )}
+                                    <span className="text-xs text-slate-400">
+                                        {new Date(rfp.createdAt).toLocaleDateString()}
+                                    </span>
+                                </div>
                             </div>
                             <h3 className="text-lg font-semibold text-slate-900 line-clamp-2 mb-2 group-hover:text-blue-600 transition-colors">
                                 {rfp.title}

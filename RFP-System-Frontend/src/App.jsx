@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import Dashboard from './components/Dashboard';
 import RFPCreate from './components/RFPCreate';
 import VendorList from './components/VendorList';
@@ -12,8 +13,8 @@ function NavLink({ to, children }) {
     <Link
       to={to}
       className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive
-          ? 'bg-blue-100 text-blue-700'
-          : 'text-slate-600 hover:bg-slate-100'
+        ? 'bg-blue-100 text-blue-700'
+        : 'text-slate-600 hover:bg-slate-100'
         }`}
     >
       {children}
@@ -58,6 +59,7 @@ function Layout() {
           </Routes>
         </div>
       </main>
+      <Toaster position="top-center" reverseOrder={false} />
     </div>
   );
 }

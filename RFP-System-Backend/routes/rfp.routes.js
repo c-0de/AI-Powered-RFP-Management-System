@@ -107,4 +107,20 @@ router.post('/:id/send', async (req, res) => {
     }
 });
 
+// Mark proposals as read
+router.put('/:id/mark-read', async (req, res) => {
+    try {
+        const rfp = await RFP.findById(req.params.id);
+        if (!rfp) return res.status(404).json({ message: 'RFP not found' });
+
+        // Update RFP count
+        rfp.unreadProposalsCount = 0;
+        await rfp.save();
+
+        res.json({ message: 'Marked as read' });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
 export default router;

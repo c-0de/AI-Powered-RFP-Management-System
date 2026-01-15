@@ -32,6 +32,10 @@ const rfpSchema = new mongoose.Schema({
     createdAt: {
         type: Date,
         default: Date.now
+    },
+    unreadProposalsCount: {
+        type: Number,
+        default: 0
     }
 }, { strict: false });
 

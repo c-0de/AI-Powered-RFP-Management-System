@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api';
+import toast from 'react-hot-toast';
 
 function RFPCreate() {
     const [description, setDescription] = useState('');
@@ -16,7 +17,7 @@ function RFPCreate() {
             setGeneratedRFP(res.data);
         } catch (error) {
             console.error(error);
-            alert('Error extracting requirements');
+            toast.error('Error extracting requirements');
         }
         setLoading(false);
     };
@@ -29,7 +30,7 @@ function RFPCreate() {
             navigate('/');
         } catch (error) {
             console.error("Failed to save RFP:", error);
-            alert("Failed to save RFP. Please try again.");
+            toast.error("Failed to save RFP. Please try again.");
         }
     };
 

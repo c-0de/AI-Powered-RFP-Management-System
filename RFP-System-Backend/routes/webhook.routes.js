@@ -137,6 +137,10 @@ router.post('/', upload.any(), async (req, res) => {
         await proposal.save();
         console.log(`SUCCESS: Proposal saved with ID: ${proposal._id}`);
 
+        // Update RFP notification count
+        await RFP.findByIdAndUpdate(rfp._id, { $inc: { unreadProposalsCount: 1 } });
+        console.log(`Updated RFP unread count.`);
+
         // Send 200 OK to acknowledge receipt
         res.status(200).send('Webhook processed and proposal saved');
     } catch (error) {
