@@ -5,15 +5,45 @@ import toast from 'react-hot-toast';
 
 function RFPCreate() {
     const [description, setDescription] = useState('');
+    const [lastSubmitted, setLastSubmitted] = useState('');
     const [generatedRFP, setGeneratedRFP] = useState(null);
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
 
+    const formatAdditionalDetail = (value) => {
+        if (value === null || value === undefined) return 'N/A';
+
+        // Handle direct arrays and objects
+        if (typeof value === 'object') {
+            if (Array.isArray(value)) {
+                return value.join(', ');
+            }
+            // For objects, show key: value pairs
+            return Object.entries(value)
+                .map(([k, v]) => `${k}: ${v}`)
+                .join(', ');
+        }
+
+        // Handle stringified arrays/objects (cleaning up the string)
+        const strVal = String(value).trim();
+        // Check if it looks like an array or object wrapping
+        if ((strVal.startsWith('[') && strVal.endsWith(']')) ||
+            (strVal.startsWith('{') && strVal.endsWith('}'))) {
+            // Remove brackets, braces, and quotes to just show the content text
+            return strVal.replace(/[\[\]\{\}"']/g, '');
+        }
+
+        return strVal;
+    };
+
     const handleGenerate = async () => {
         if (!description.trim()) return;
+        const textToSubmit = description;
+        setLastSubmitted(textToSubmit);
+        setDescription('');
         setLoading(true);
         try {
-            const res = await api.post('/rfps/generate', { description });
+            const res = await api.post('/rfps/generate', { description: textToSubmit });
             setGeneratedRFP(res.data);
         } catch (error) {
             console.error(error);
@@ -58,7 +88,7 @@ function RFPCreate() {
                     {(generatedRFP || loading) && (
                         <div className="flex items-start justify-end">
                             <div className="mr-4 bg-blue-600 p-4 rounded-2xl rounded-tr-none shadow-sm max-w-lg text-white">
-                                <p>{description}</p>
+                                <p>{lastSubmitted}</p>
                             </div>
                             <div className="flex-shrink-0 h-10 w-10 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 font-bold">
                                 Me
@@ -162,7 +192,7 @@ function RFPCreate() {
                                                     {dynamicKeys.map(key => (
                                                         <div key={key}>
                                                             <label className="text-xs text-slate-400 capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}</label>
-                                                            <p className="text-sm font-medium text-slate-900">{typeof generatedRFP[key] === 'object' ? JSON.stringify(generatedRFP[key]) : generatedRFP[key].toString()}</p>
+                                                            <p className="text-sm font-medium text-slate-900">{formatAdditionalDetail(generatedRFP[key])}</p>
                                                         </div>
                                                     ))}
                                                 </div>

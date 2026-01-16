@@ -24,4 +24,21 @@ router.post('/', async (req, res) => {
     }
 });
 
+// Update Vendor
+router.put('/:id', async (req, res) => {
+    try {
+        const updatedVendor = await Vendor.findByIdAndUpdate(
+            req.params.id,
+            req.body,
+            { new: true } // Return the updated document
+        );
+        if (!updatedVendor) {
+            return res.status(404).json({ message: "Vendor not found" });
+        }
+        res.json(updatedVendor);
+    } catch (error) {
+        res.status(500).json({ message: `Failed to update vendor: ${error.message}` });
+    }
+});
+
 export default router;

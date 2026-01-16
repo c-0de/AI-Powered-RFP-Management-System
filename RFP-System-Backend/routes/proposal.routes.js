@@ -109,12 +109,16 @@ router.get('/rfp/:rfpId/compare', async (req, res) => {
         const recommendation = await compareProposals(rfp, proposals);
 
         // Save Analysis to DB
-        const analysis = new Analysis({
-            rfp: rfp._id,
-            proposals: proposals.map(p => p._id),
-            content: recommendation
-        });
-        await analysis.save();
+        // Save or Update Analysis in DB
+        const analysis = await Analysis.findOneAndUpdate(
+            { rfp: rfp._id },
+            {
+                rfp: rfp._id,
+                proposals: proposals.map(p => p._id),
+                content: recommendation
+            },
+            { new: true, upsert: true }
+        );
 
         // Return result
         res.json({ recommendation, analysisId: analysis._id, analysisDate: analysis.createdAt, cached: false });

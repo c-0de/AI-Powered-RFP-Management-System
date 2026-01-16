@@ -13,6 +13,7 @@ function VendorList() {
         categories: ''
     });
     const [loading, setLoading] = useState(false);
+    const [editingVendorId, setEditingVendorId] = useState(null);
 
     useEffect(() => {
         fetchVendors();
@@ -27,6 +28,32 @@ function VendorList() {
         }
     };
 
+    const resetForm = () => {
+        setNewVendor({
+            vendorCode: '',
+            companyName: '',
+            email: '',
+            phone: '',
+            location: '',
+            categories: ''
+        });
+        setEditingVendorId(null);
+    };
+
+    const handleEdit = (vendor) => {
+        setEditingVendorId(vendor._id);
+        setNewVendor({
+            vendorCode: vendor.vendorCode || '',
+            companyName: vendor.companyName || '',
+            email: vendor.email || '',
+            phone: vendor.phone || '',
+            location: vendor.location || '',
+            categories: vendor.categories ? vendor.categories.join(', ') : ''
+        });
+        // Scroll to top to see form
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
@@ -35,19 +62,19 @@ function VendorList() {
                 ...newVendor,
                 categories: newVendor.categories.split(',').map(c => c.trim()).filter(c => c)
             };
-            await api.post('/vendors', payload);
-            setNewVendor({
-                vendorCode: '',
-                companyName: '',
-                email: '',
-                phone: '',
-                location: '',
-                categories: ''
-            });
-            toast.success('Vendor added successfully');
+
+            if (editingVendorId) {
+                await api.put(`/vendors/${editingVendorId}`, payload);
+                toast.success('Vendor updated successfully');
+            } else {
+                await api.post('/vendors', payload);
+                toast.success('Vendor added successfully');
+            }
+
+            resetForm();
             fetchVendors();
         } catch (error) {
-            toast.error("Error adding vendor");
+            toast.error(editingVendorId ? "Error updating vendor" : "Error adding vendor");
             console.error(error);
         }
         setLoading(false);
@@ -66,7 +93,18 @@ function VendorList() {
                 {/* Left Column: Form */}
                 <div className="lg:col-span-1">
                     <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-                        <h2 className="text-lg font-semibold text-slate-800 mb-4">Add New Vendor</h2>
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-lg font-semibold text-slate-800">{editingVendorId ? 'Edit Vendor' : 'Add New Vendor'}</h2>
+                            {editingVendorId && (
+                                <button
+                                    type="button"
+                                    onClick={resetForm}
+                                    className="text-sm text-slate-500 hover:text-slate-700 underline"
+                                >
+                                    Cancel
+                                </button>
+                            )}
+                        </div>
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div>
                                 <label className="block text-sm font-medium text-slate-700 mb-1">Vendor Code</label>
@@ -129,9 +167,10 @@ function VendorList() {
                             <button
                                 type="submit"
                                 disabled={loading}
-                                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-lg transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                className={`w-full text-white font-medium py-2.5 rounded-lg transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed ${editingVendorId ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-blue-600 hover:bg-blue-700'
+                                    }`}
                             >
-                                {loading ? 'Adding...' : 'Add Vendor'}
+                                {loading ? (editingVendorId ? 'Updating...' : 'Adding...') : (editingVendorId ? 'Update Vendor' : 'Add Vendor')}
                             </button>
                         </form>
                     </div>
@@ -193,7 +232,10 @@ function VendorList() {
                                                     </div>
                                                 )}
                                             </div>
-                                            <button className="text-slate-400 hover:text-blue-600 transition-colors">
+                                            <button
+                                                onClick={() => handleEdit(vendor)}
+                                                className="text-slate-400 hover:text-blue-600 transition-colors cursor-pointer"
+                                            >
                                                 <span className="sr-only">Edit</span>
                                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
