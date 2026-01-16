@@ -10,6 +10,8 @@ A comprehensive system for managing Requests for Proposals (RFPs), automating ve
 *   **Sequential Processing**: Vendor responses are processed one by one. Concurrent processing for high volumes of emails is not yet implemented.
 *   **User Authentication**: The system is designed as an internal tool and currently does not implement user authentication (Login/Signup) or Role-Based Access Control (RBAC).
 
+*   **RFP Resubmission Limitation:**: Once an RFP request is sent, the system does not allow it to be resent to other vendors or reused to communicate with the same vendor for further clarifications. This limitation exists because the platform currently lacks advanced workflow management and multi-vendor communication features.
+
 ### Future Roadmap
 *   **Scalability (LangGraph)**: Integration of LangGraph to create more scalable and stateful agentic workflows.
 *   **AI Guardrails**: Implementing robust guardrails to ensure consistent and safe AI outputs.

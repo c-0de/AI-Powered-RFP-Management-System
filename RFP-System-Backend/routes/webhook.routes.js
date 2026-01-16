@@ -23,156 +23,158 @@ router.get('/', (req, res) => {
  * @description Receive email webhooks (e.g., from ngrok/Mailgun)
  * @access Public (Webhook)
  */
-router.post('/', upload.any(), async (req, res) => {
-    try {
-        console.log('\n***********************************************');
-        console.log('***    EMAIL WEBHOOK RECEIVED SUCCESSFULLY    ***');
-        console.log('***********************************************');
-        console.log('Timestamp:', new Date().toISOString());
+router.post('/', upload.any(), (req, res) => {
+    // 1. Immediate Response
+    res.status(200).send('Webhook received, processing in background');
 
-        // Extract fields
-        const { sender, recipient, subject, 'body-plain': bodyPlain } = req.body;
-        const emailBody = bodyPlain || req.body['body-html'] || 'No content';
+    // 2. Background Processing
+    (async () => {
+        try {
+            console.log('\n***********************************************');
+            console.log('***    EMAIL WEBHOOK RECEIVED SUCCESSFULLY    ***');
+            console.log('***********************************************');
+            console.log('Timestamp:', new Date().toISOString());
 
-        console.log(`Processing email from: ${sender}`);
+            // Extract fields
+            const { sender, recipient, subject, 'body-plain': bodyPlain } = req.body;
+            const emailBody = bodyPlain || req.body['body-html'] || 'No content';
 
-        // 1. Identify Vendor
-        // Mailgun sender format: "Name <email@domain.com>" or just "email@domain.com"
-        const emailMatch = sender ? sender.match(/([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+)/) : null;
+            console.log(`Processing email from: ${sender}`);
 
-        if (!emailMatch) {
-            console.log("Error: Could not extract email from sender string");
-            return res.status(200).send('Invalid Sender Email Format');
-        }
+            // 1. Identify Vendor
+            // Mailgun sender format: "Name <email@domain.com>" or just "email@domain.com"
+            const emailMatch = sender ? sender.match(/([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+)/) : null;
 
-        const cleanEmail = emailMatch[0].toLowerCase(); // Case insensitive
-        console.log(`Extracted Email: ${cleanEmail}`);
-
-        // Case-insensitive find
-        const vendor = await Vendor.findOne({ email: { $regex: new RegExp(`^${cleanEmail}$`, 'i') } });
-
-        if (!vendor) {
-            console.log(`Error: Vendor not found for email ${cleanEmail}`);
-            // Return 200 so Mailgun considers it delivered
-            return res.status(200).send('Vendor email not recognized in system');
-        }
-        console.log(`Identified Vendor: ${vendor.companyName}`);
-
-        // 2. Identify RFP
-        // Assumption: Attach to the most recent 'Sent' RFP since we don't have ID in subject yet
-        const rfp = await RFP.findOne({ status: 'Sent' }).sort({ createdAt: -1 });
-        if (!rfp) {
-            console.log('Error: No active (Sent) RFP found.');
-            return res.status(200).send('No active (Sent) RFP found to attach proposal');
-        }
-        console.log(`Identified RFP: ${rfp.title}`);
-
-        // Helper to strip quoted replies
-        const extractNewContent = (text) => {
-            if (!text) return "";
-            // Common delimiters for replies
-            const delimiters = [
-                /On .+, .+ wrote:/i,
-                /-----Original Message-----/i,
-                /From: .+/i,
-                /^>.*$/m // Lines starting with >
-            ];
-
-            let content = text;
-            for (const delimiter of delimiters) {
-                const match = content.match(delimiter);
-                if (match && match.index !== undefined) {
-                    content = content.substring(0, match.index);
-                }
+            if (!emailMatch) {
+                console.log("Error: Could not extract email from sender string");
+                return; // Stop processing, no response needed
             }
-            return content.trim();
-        };
 
-        const cleanEmailBody = extractNewContent(emailBody);
-        console.log(`Cleaned Email Content: "${cleanEmailBody}"`);
+            const cleanEmail = emailMatch[0].toLowerCase(); // Case insensitive
+            console.log(`Extracted Email: ${cleanEmail}`);
 
-        // 3. AI Parse
-        console.log('Parsing email content with AI...');
-        let extractedData = {};
+            // Case-insensitive find
+            const vendor = await Vendor.findOne({ email: { $regex: new RegExp(`^${cleanEmail}$`, 'i') } });
 
-        // Only parse if there's substantial content
-        if (cleanEmailBody.length > 2) {
-            try {
-                extractedData = await parseVendorResponse(cleanEmailBody);
-                console.log('AI Parsing Complete.');
-            } catch (aiError) {
-                console.error("AI Parsing failed, falling back to empty data:", aiError);
+            if (!vendor) {
+                console.log(`Error: Vendor not found for email ${cleanEmail}`);
+                return; // Stop processing
             }
-        } else {
-            console.log("Email content too short for AI parsing, skipping.");
-            // Default structure for short/empty emails
-            extractedData = {
-                totalPrice: 0,
-                deliveryTime: "N/A",
-                warranty: "N/A",
-                proposal_body: cleanEmailBody,
-                requirements_analysis: "Message too short to analyze.",
-                lineItems: []
-            };
-        }
+            console.log(`Identified Vendor: ${vendor.companyName}`);
 
-        // SANITIZATION: Ensure numeric fields are actually numbers to prevent Mongoose CastErrors
-        if (extractedData) {
-            // Helper to parse price
-            const safeParsePrice = (val) => {
-                if (typeof val === 'number') return val;
-                if (typeof val === 'string') {
-                    // Remove currency symbols and commas
-                    const cleaned = val.replace(/[^0-9.-]+/g, "");
-                    const parsed = parseFloat(cleaned);
-                    return isNaN(parsed) ? 0 : parsed;
+            // 2. Identify RFP
+            // Assumption: Attach to the most recent 'Sent' RFP since we don't have ID in subject yet
+            const rfp = await RFP.findOne({ status: 'Sent' }).sort({ createdAt: -1 });
+            if (!rfp) {
+                console.log('Error: No active (Sent) RFP found.');
+                return; // Stop processing
+            }
+            console.log(`Identified RFP: ${rfp.title}`);
+
+            // Helper to strip quoted replies
+            const extractNewContent = (text) => {
+                if (!text) return "";
+                // Common delimiters for replies
+                const delimiters = [
+                    /On .+, .+ wrote:/i,
+                    /-----Original Message-----/i,
+                    /From: .+/i,
+                    /^>.*$/m // Lines starting with >
+                ];
+
+                let content = text;
+                for (const delimiter of delimiters) {
+                    const match = content.match(delimiter);
+                    if (match && match.index !== undefined) {
+                        content = content.substring(0, match.index);
+                    }
                 }
-                return 0;
+                return content.trim();
             };
 
-            extractedData.totalPrice = safeParsePrice(extractedData.totalPrice);
+            const cleanEmailBody = extractNewContent(emailBody);
+            console.log(`Cleaned Email Content: "${cleanEmailBody}"`);
 
-            if (Array.isArray(extractedData.lineItems)) {
-                extractedData.lineItems = extractedData.lineItems.map(item => ({
-                    ...item,
-                    price: safeParsePrice(item.price)
-                }));
+            // 3. AI Parse
+            console.log('Parsing email content with AI...');
+            let extractedData = {};
+
+            // Only parse if there's substantial content
+            if (cleanEmailBody.length > 2) {
+                try {
+                    extractedData = await parseVendorResponse(cleanEmailBody);
+                    console.log('AI Parsing Complete.');
+                } catch (aiError) {
+                    console.error("AI Parsing failed, falling back to empty data:", aiError);
+                }
+            } else {
+                console.log("Email content too short for AI parsing, skipping.");
+                // Default structure for short/empty emails
+                extractedData = {
+                    totalPrice: 0,
+                    deliveryTime: "N/A",
+                    warranty: "N/A",
+                    proposal_body: cleanEmailBody,
+                    requirements_analysis: "Message too short to analyze.",
+                    lineItems: []
+                };
             }
+
+            // SANITIZATION: Ensure numeric fields are actually numbers to prevent Mongoose CastErrors
+            if (extractedData) {
+                // Helper to parse price
+                const safeParsePrice = (val) => {
+                    if (typeof val === 'number') return val;
+                    if (typeof val === 'string') {
+                        // Remove currency symbols and commas
+                        const cleaned = val.replace(/[^0-9.-]+/g, "");
+                        const parsed = parseFloat(cleaned);
+                        return isNaN(parsed) ? 0 : parsed;
+                    }
+                    return 0;
+                };
+
+                extractedData.totalPrice = safeParsePrice(extractedData.totalPrice);
+
+                if (Array.isArray(extractedData.lineItems)) {
+                    extractedData.lineItems = extractedData.lineItems.map(item => ({
+                        ...item,
+                        price: safeParsePrice(item.price)
+                    }));
+                }
+            }
+
+            // 4. Save Proposal
+            const proposal = new Proposal({
+                rfp: rfp._id,
+                vendor: vendor._id,
+                proposal: cleanEmailBody, // Renamed from emailContent
+
+                // Spread extracted data to top level
+                totalPrice: extractedData.totalPrice,
+                deliveryTime: extractedData.deliveryTime,
+                warranty: extractedData.warranty,
+                validity_period: extractedData.validity_period,
+                key_highlights: extractedData.key_highlights,
+                proposalBody: extractedData.proposal_body, // Store the summary
+                requirements_analysis: extractedData.requirements_analysis,
+                extractionDetails: extractedData, // Store full object for reference
+                lineItems: extractedData.lineItems,
+
+                receivedAt: new Date()
+            });
+
+            await proposal.save();
+            console.log(`SUCCESS: Proposal saved with ID: ${proposal._id}`);
+
+            // Update RFP notification count
+            await RFP.findByIdAndUpdate(rfp._id, { $inc: { unreadProposalsCount: 1 } });
+            console.log(`Updated RFP unread count.`);
+
+        } catch (error) {
+            console.error('Error processing webhook in background:', error);
         }
-
-        // 4. Save Proposal
-        const proposal = new Proposal({
-            rfp: rfp._id,
-            vendor: vendor._id,
-            proposal: cleanEmailBody, // Renamed from emailContent
-
-            // Spread extracted data to top level
-            totalPrice: extractedData.totalPrice,
-            deliveryTime: extractedData.deliveryTime,
-            warranty: extractedData.warranty,
-            validity_period: extractedData.validity_period,
-            key_highlights: extractedData.key_highlights,
-            proposalBody: extractedData.proposal_body, // Store the summary
-            requirements_analysis: extractedData.requirements_analysis,
-            extractionDetails: extractedData, // Store full object for reference
-            lineItems: extractedData.lineItems,
-
-            receivedAt: new Date()
-        });
-
-        await proposal.save();
-        console.log(`SUCCESS: Proposal saved with ID: ${proposal._id}`);
-
-        // Update RFP notification count
-        await RFP.findByIdAndUpdate(rfp._id, { $inc: { unreadProposalsCount: 1 } });
-        console.log(`Updated RFP unread count.`);
-
-        // Send 200 OK to acknowledge receipt
-        res.status(200).send('Webhook processed successfully: Proposal saved');
-    } catch (error) {
-        console.error('Error processing webhook:', error);
-        res.status(500).send('Internal Server Error: Proposal processing failed');
-    }
+    })();
 });
 
 export default router;
