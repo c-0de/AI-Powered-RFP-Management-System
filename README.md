@@ -54,8 +54,9 @@ You will also need API keys/credentials for:
     cd RFP-System-Frontend
     ```
 2.  Install dependencies:
-    ```bash
-    
+     ```bash
+    npm install
+    ```
 ---
 
 ### Database Setup
