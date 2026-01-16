@@ -28,7 +28,7 @@ graph TD
     end
 
     subgraph "External Services"
-        AI["AI Service (Groq / Gemini)"]
+        AI["AI Service (Groq)"]
         Email["Mailgun (Email Service)"]
         Webhook["Webhook Receiver"]
     end
@@ -77,7 +77,7 @@ graph TD
     *   Analyses (AI Comparisons)
 
 ### 4. AI Service
-*   **Providers:** Groq (Llama 3) / Google Gemini.
+*   **Providers:** Groq (groq/compound)
 *   **Functions:**
     *   **RFP Extraction:** structured specs from natural language.
     *   **Proposal Parsing:** Extracting price, delivery, and specs from email text.

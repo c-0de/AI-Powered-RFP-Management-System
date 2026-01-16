@@ -5,4 +5,43 @@ RFP Budget: {{ rfp.budget }}
 Proposals:
 {{ proposals_json | safe }}
 
-Provide a brief recommendation on which vendor to choose and why. Return a plain text summary.
+OUTPUT FORMAT (STRICT — DO NOT MODIFY)
+
+### NOTE: The below format shoud be stirclty the same, do not modify it in any way
+
+
+🏆 Final Selected Vendor:
+[Vendor Name — MUST NOT BE EMPTY]
+
+📌 Selection Type:
+[Either: "Best Fit Vendor" OR "Least Risk Operational Choice"]
+
+💡 Decision Rationale:
+[Explain:
+
+Why this vendor was selected
+
+Tradeoffs made
+
+Risk vs benefit reasoning
+
+Why others ranked lower
+]
+
+⚠️ Known Risks & Assumptions:
+
+[Risk or assumption #1]
+
+[Risk or assumption #2]
+
+❓ Mandatory Follow-Up Questions:
+
+[Clarification question #1]
+
+[Clarification question #2]
+
+📊 Final Comparison Summary:
+[One decisive sentence explaining the selection]
+
+Example:
+"Although Vendor B does not fully meet the delivery timeline, it was selected over Vendor A due to stronger specification compliance and lower cost risk."

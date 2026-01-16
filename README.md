@@ -28,7 +28,7 @@ A comprehensive system for managing Requests for Proposals (RFPs), automating ve
 *   **Frontend**: React (Vite), TailwindCSS, React Router, Axios.
 *   **Backend**: Node.js, Express.js, Mongoose.
 *   **Database**: MongoDB.
-*   **AI Providers**: Groq SDK (Llama 3), Google Generative AI (Gemini).
+*   **AI Providers**: Groq SDK (groq/compound)
 *   **Email Solution**: Mailgun (sending/receiving).
 *   **Key Libraries**:
     *   *Frontend*: `react-hot-toast` (Notifications), `react-markdown` (Rendering).
@@ -44,7 +44,7 @@ Before you begin, ensure you have the following installed:
 *   **npm**: Configured and working.
 
 You will also need API keys/credentials for:
-*   **AI Providers**: Groq (Llama 3) or Google Gemini.
+*   **AI Providers**: Groq (groq/compound)
 *   **Email Service**: Mailgun (or compatible SMTP/IMAP provider).
 *   **Ngrok**: For exposing your local server to receive email webhooks.
 
@@ -104,8 +104,8 @@ You will also need API keys/credentials for:
 *   Create an account.
 *   Get your free API Key.
 *   Set it in the `.env` file.
-*   You can choose your models like `llama-3.1-8b-instant`, `llama-3.3-70b-versatile`, etc.
-*   *We have used `llama-3.3-70b-versatile` for this project.*
+*   You can choose your models like `groq/compound`, `llama-3.3-70b-versatile`, etc.
+*   *We have used `groq/compound` for this project.*
 
 ## Running the Application
 
