@@ -1,6 +1,22 @@
 # AI-Powered RFP Management System
 
+
 A comprehensive system for managing Requests for Proposals (RFPs), automating vendor interactions, and leveraging AI for comparing proposals.
+
+## Scopes and Limitations
+
+### Current Scope & Limitations
+*   **Email Attachments**: Currently, the system only processes the **text content** of vendor emails. Attachments such as PDFs or Word documents are not parsed or analyzed.
+*   **Sequential Processing**: Vendor responses are processed one by one. Concurrent processing for high volumes of emails is not yet implemented.
+*   **User Authentication**: The system is designed as an internal tool and currently does not implement user authentication (Login/Signup) or Role-Based Access Control (RBAC).
+
+### Future Roadmap
+*   **Scalability (LangGraph)**: Integration of LangGraph to create more scalable and stateful agentic workflows.
+*   **AI Guardrails**: Implementing robust guardrails to ensure consistent and safe AI outputs.
+*   **Enhanced Error Handling**: Improving exception handling capabilities, particularly for chat and AI interaction flows.
+*   **Concurrent Processing**: Upgrading the email handling pipeline to support concurrent processing of vendor responses.
+*   **Domain-Specific Fine-tuning**: Adopting Model Context Protocol (MCP) or adapter-style fine-tuning to specialize the AI for specific industry domains.
+
 
 ## Project Structure
 
