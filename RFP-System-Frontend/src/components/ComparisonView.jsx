@@ -72,11 +72,11 @@ function ComparisonView() {
     const handleCheckEmails = async () => {
         setIsSyncing(true);
         try {
-            const res = await api.post('/proposals/check-emails');
-            toast.success('Sync success');
-            fetchData();
+            // Check for new data directly
+            await fetchData();
+            toast.success('Refreshed data');
         } catch (error) {
-            toast.error('Error checking emails');
+            toast.error('Error refreshing data');
         } finally {
             setIsSyncing(false);
         }

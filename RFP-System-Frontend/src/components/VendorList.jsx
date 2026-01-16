@@ -14,6 +14,8 @@ function VendorList() {
     });
     const [loading, setLoading] = useState(false);
     const [editingVendorId, setEditingVendorId] = useState(null);
+    const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+    const [vendorToDelete, setVendorToDelete] = useState(null);
 
     useEffect(() => {
         fetchVendors();
@@ -80,8 +82,67 @@ function VendorList() {
         setLoading(false);
     };
 
+    const handleDeleteClick = (vendor) => {
+        setVendorToDelete(vendor);
+        setDeleteModalOpen(true);
+    };
+
+    const confirmDelete = async () => {
+        if (!vendorToDelete) return;
+
+        try {
+            await api.delete(`/vendors/${vendorToDelete._id}`);
+            toast.success('Vendor deleted successfully');
+            fetchVendors();
+        } catch (error) {
+            toast.error('Error deleting vendor');
+            console.error(error);
+        } finally {
+            setDeleteModalOpen(false);
+            setVendorToDelete(null);
+        }
+    };
+
+    const cancelDelete = () => {
+        setDeleteModalOpen(false);
+        setVendorToDelete(null);
+    };
+
     return (
         <div className="space-y-6">
+            {/* Delete Confirmation Modal */}
+            {deleteModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+                    <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 animate-in fade-in zoom-in duration-200">
+                        <div className="flex flex-col items-center text-center">
+                            <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mb-4">
+                                <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                </svg>
+                            </div>
+                            <h3 className="text-lg font-semibold text-slate-900 mb-2">Delete Vendor?</h3>
+                            <p className="text-slate-500 mb-6">
+                                Are you sure you want to delete <span className="font-medium text-slate-700">{vendorToDelete?.companyName}</span>? This action cannot be undone.
+                            </p>
+                            <div className="flex gap-3 w-full">
+                                <button
+                                    onClick={cancelDelete}
+                                    className="flex-1 px-4 py-2 bg-white border border-slate-300 rounded-lg text-slate-700 font-medium hover:bg-slate-50 transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={confirmDelete}
+                                    className="flex-1 px-4 py-2 bg-red-600 rounded-lg text-white font-medium hover:bg-red-700 transition-colors shadow-sm"
+                                >
+                                    Delete
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <div className="flex justify-between items-center bg-white p-6 rounded-xl shadow-sm border border-slate-200">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-800">Vendor Management</h1>
@@ -232,15 +293,28 @@ function VendorList() {
                                                     </div>
                                                 )}
                                             </div>
-                                            <button
-                                                onClick={() => handleEdit(vendor)}
-                                                className="text-slate-400 hover:text-blue-600 transition-colors cursor-pointer"
-                                            >
-                                                <span className="sr-only">Edit</span>
-                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                                                </svg>
-                                            </button>
+                                            <div className="flex items-center gap-4">
+                                                <button
+                                                    onClick={() => handleEdit(vendor)}
+                                                    className="text-slate-400 hover:text-blue-600 transition-colors cursor-pointer"
+                                                    title="Edit"
+                                                >
+                                                    <span className="sr-only">Edit</span>
+                                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                                    </svg>
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDeleteClick(vendor)}
+                                                    className="text-slate-400 hover:text-red-600 transition-colors cursor-pointer"
+                                                    title="Delete"
+                                                >
+                                                    <span className="sr-only">Delete</span>
+                                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                    </svg>
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 ))

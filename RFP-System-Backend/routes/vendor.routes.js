@@ -41,4 +41,17 @@ router.put('/:id', async (req, res) => {
     }
 });
 
+// Delete Vendor
+router.delete('/:id', async (req, res) => {
+    try {
+        const deletedVendor = await Vendor.findByIdAndDelete(req.params.id);
+        if (!deletedVendor) {
+            return res.status(404).json({ message: "Vendor not found" });
+        }
+        res.json({ message: "Vendor deleted successfully" });
+    } catch (error) {
+        res.status(500).json({ message: `Failed to delete vendor: ${error.message}` });
+    }
+});
+
 export default router;

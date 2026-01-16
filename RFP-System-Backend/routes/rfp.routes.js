@@ -79,11 +79,14 @@ router.post('/generate', async (req, res) => {
 // Send RFP to Vendors
 router.post('/:id/send', async (req, res) => {
     const { vendorIds } = req.body; // Array of vendor IDs
+    console.log(`Received request to send RFP ${req.params.id} to vendors:`, vendorIds);
+
     try {
         const rfp = await RFP.findById(req.params.id);
         if (!rfp) return res.status(404).json({ message: 'RFP not found' });
 
         const vendors = await Vendor.find({ _id: { $in: vendorIds } });
+        console.log(`Found ${vendors.length} vendors in DB matching provided IDs.`);
 
         // Update RFP with selected vendors
         rfp.selectedVendors = vendorIds;
@@ -91,17 +94,35 @@ router.post('/:id/send', async (req, res) => {
         await rfp.save();
 
         // Send Emails
-        const emailPromises = vendors.map(vendor => {
-            const subject = `Request for Proposal: ${rfp.title}`;
-            const text = `Dear ${vendor.companyName},\n\nPlease find attached the details for our new RFP.\n\nDescription: ${rfp.description}\n\nBudget: ${rfp.currency} ${rfp.budget}\nDeadline: ${rfp.deadline}\n\nPlease reply to this email with your proposal.\n\nBest regards,\nProcurement Team`;
+        const emailPromises = vendors.map(async (vendor) => {
+            try {
+                const subject = `Request for Proposal: ${rfp.title}`;
+                const text = `Dear ${vendor.companyName},\n\nPlease find attached the details for our new RFP.\n\nDescription: ${rfp.description}\n\nBudget: ${rfp.currency} ${rfp.budget}\nDeadline: ${rfp.deadline}\n\nPlease reply to this email with your proposal.\n\nBest regards,\nProcurement Team`;
 
-            return sendEmail(vendor.email, subject, text, text); // Send HTML as text for now
+                console.log(`Sending email to ${vendor.email}...`);
+                await sendEmail(vendor.email, subject, text, text); // Send HTML as text for now
+                console.log(`Email sent successfully to ${vendor.email}`);
+                return { status: 'fulfilled', email: vendor.email };
+            } catch (err) {
+                console.error(`Failed to send email to ${vendor.email}:`, err);
+                return { status: 'rejected', email: vendor.email, error: err.message };
+            }
         });
 
-        await Promise.all(emailPromises);
+        const results = await Promise.allSettled(emailPromises);
 
-        res.json({ message: `Successfully sent RFP invitations to ${vendors.length} vendors`, vendorCount: vendors.length });
+        const successCount = results.filter(r => r.value && r.value.status === 'fulfilled').length;
+        const failedCount = vendors.length - successCount;
+
+        console.log(`Email sending complete. Success: ${successCount}, Failed: ${failedCount}`);
+
+        res.json({
+            message: `Processed RFP invitations. Sent: ${successCount}, Failed: ${failedCount}`,
+            vendorCount: vendors.length,
+            details: results.map(r => r.value || r.reason)
+        });
     } catch (error) {
+        console.error("Critical error in send RFP route:", error);
         res.status(500).json({ message: `Failed to send RFP emails: ${error.message}` });
     }
 });
