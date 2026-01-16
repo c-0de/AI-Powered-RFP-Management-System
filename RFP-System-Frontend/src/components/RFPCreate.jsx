@@ -103,11 +103,11 @@ function RFPCreate() {
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
                                             <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Budget</label>
-                                            <p className="text-slate-900">{generatedRFP.currency} {generatedRFP.budget.toLocaleString()}</p>
+                                            <p className="text-slate-900">{generatedRFP.currency} {generatedRFP.budget?.toLocaleString() || 'N/A'}</p>
                                         </div>
                                         <div>
                                             <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Deadline</label>
-                                            <p className="text-slate-900">{new Date(generatedRFP.deadline).toLocaleDateString()}</p>
+                                            <p className="text-slate-900">{generatedRFP.deadline ? new Date(generatedRFP.deadline).toLocaleDateString() : 'N/A'}</p>
                                         </div>
                                     </div>
                                     <div>
@@ -122,7 +122,7 @@ function RFPCreate() {
                                                     </tr>
                                                 </thead>
                                                 <tbody className="bg-white divide-y divide-slate-200">
-                                                    {generatedRFP.items.map((item, idx) => (
+                                                    {generatedRFP.items?.map((item, idx) => (
                                                         <tr key={idx}>
                                                             <td className="px-4 py-2 text-sm text-slate-900">{item.itemName}</td>
                                                             <td className="px-4 py-2 text-sm text-slate-500">{item.quantity}</td>
@@ -151,7 +151,7 @@ function RFPCreate() {
                                     {/* Dynamic Fields Section */}
                                     {(() => {
                                         const standardFields = ['title', 'description', 'items', 'budget', 'currency', 'deadline', 'time', 'date', '_id', 'status', 'createdAt', 'updatedAt', 'selectedVendors', '__v'];
-                                        const dynamicKeys = Object.keys(generatedRFP).filter(key => !standardFields.includes(key) && generatedRFP[key] !== null);
+                                        const dynamicKeys = Object.keys(generatedRFP).filter(key => !standardFields.includes(key) && generatedRFP[key] != null);
 
                                         if (dynamicKeys.length === 0) return null;
 

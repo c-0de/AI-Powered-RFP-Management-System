@@ -19,7 +19,9 @@ const proposalSchema = new mongoose.Schema({
     warranty: String,
     validity_period: String,
     key_highlights: [String], // Array of important bullet points
+    proposalBody: String, // Comprehensive summary of the proposal narrative
     requirements_analysis: String, // Analysis of how requirements are met
+    extractionDetails: Object, // Store full raw extracted metadata
     lineItems: [{
         itemName: String,
         price: Number,

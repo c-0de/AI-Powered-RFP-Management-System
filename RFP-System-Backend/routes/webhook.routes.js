@@ -116,6 +116,30 @@ router.post('/', upload.any(), async (req, res) => {
             };
         }
 
+        // SANITIZATION: Ensure numeric fields are actually numbers to prevent Mongoose CastErrors
+        if (extractedData) {
+            // Helper to parse price
+            const safeParsePrice = (val) => {
+                if (typeof val === 'number') return val;
+                if (typeof val === 'string') {
+                    // Remove currency symbols and commas
+                    const cleaned = val.replace(/[^0-9.-]+/g, "");
+                    const parsed = parseFloat(cleaned);
+                    return isNaN(parsed) ? 0 : parsed;
+                }
+                return 0;
+            };
+
+            extractedData.totalPrice = safeParsePrice(extractedData.totalPrice);
+
+            if (Array.isArray(extractedData.lineItems)) {
+                extractedData.lineItems = extractedData.lineItems.map(item => ({
+                    ...item,
+                    price: safeParsePrice(item.price)
+                }));
+            }
+        }
+
         // 4. Save Proposal
         const proposal = new Proposal({
             rfp: rfp._id,
@@ -128,7 +152,9 @@ router.post('/', upload.any(), async (req, res) => {
             warranty: extractedData.warranty,
             validity_period: extractedData.validity_period,
             key_highlights: extractedData.key_highlights,
+            proposalBody: extractedData.proposal_body, // Store the summary
             requirements_analysis: extractedData.requirements_analysis,
+            extractionDetails: extractedData, // Store full object for reference
             lineItems: extractedData.lineItems,
 
             receivedAt: new Date()

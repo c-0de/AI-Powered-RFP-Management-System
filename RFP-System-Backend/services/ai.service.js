@@ -174,7 +174,12 @@ export const compareProposals = async (rfp, proposals) => {
             vendor: p.vendor.companyName,
             totalPrice: p.totalPrice,
             delivery: p.deliveryTime,
-            warranty: p.warranty
+            warranty: p.warranty,
+            validity_period: p.validity_period,
+            key_highlights: p.key_highlights,
+            proposal_summary: p.proposalBody,
+            requirements_analysis: p.requirements_analysis,
+            lineItems: p.lineItems
         })));
 
         const systemPrompt = nunjucks.render('proposal_comparison_system.jinja');

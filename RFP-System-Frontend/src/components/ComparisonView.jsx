@@ -5,8 +5,6 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import toast from 'react-hot-toast';
 
-
-
 function ComparisonView() {
     const { id } = useParams();
     const [rfp, setRfp] = useState(null);
@@ -18,6 +16,9 @@ function ComparisonView() {
     const [selectedProposal, setSelectedProposal] = useState(null);
     const [isSending, setIsSending] = useState(false);
     const [isSyncing, setIsSyncing] = useState(false);
+    const [analysisDate, setAnalysisDate] = useState(null);
+
+    const isOutdated = analysisDate && proposals.some(p => new Date(p.receivedAt) > new Date(analysisDate));
 
     useEffect(() => {
         fetchData();
@@ -30,6 +31,16 @@ function ComparisonView() {
             setRfp(rfpRes.data);
             const propRes = await api.get(`/proposals/rfp/${id}`);
             setProposals(propRes.data);
+
+            // Check for existing analysis (safe check, no generation)
+            try {
+                const analysisRes = await api.get(`/proposals/rfp/${id}/compare?checkOnly=true`);
+                if (analysisRes.data.recommendation) {
+                    setRecommendation(analysisRes.data.recommendation);
+                }
+            } catch (err) {
+                console.error("Error checking existing analysis:", err);
+            }
 
             // Mark as read if there are unread items
             if (rfpRes.data.unreadProposalsCount > 0) {
@@ -71,13 +82,19 @@ function ComparisonView() {
         }
     };
 
-    const handleCompare = async () => {
+    const handleCompare = async (force = false) => {
         setLoadingComparison(true);
         try {
-            const res = await api.get(`/proposals/rfp/${id}/compare`);
+            const endpoint = force
+                ? `/proposals/rfp/${id}/compare?force=true`
+                : `/proposals/rfp/${id}/compare`;
+
+            const res = await api.get(endpoint);
             setRecommendation(res.data.recommendation);
+            if (force) toast.success('Analysis refreshed');
         } catch (error) {
             console.error(error);
+            toast.error('Error generating analysis');
         }
         setLoadingComparison(false);
     };
@@ -98,8 +115,6 @@ function ComparisonView() {
 
     return (
         <div className="space-y-8">
-            {/* ... Header and other existing code ... */}
-
             {/* Header */}
             <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
                 <div className="md:flex md:items-center md:justify-between">
@@ -109,13 +124,13 @@ function ComparisonView() {
                                 {rfp.status}
                             </span>
                             <span>•</span>
-                            <span>Deadline: {new Date(rfp.deadline).toLocaleDateString()}</span>
+                            <span>Deadline: {rfp.deadline ? new Date(rfp.deadline).toLocaleDateString() : 'N/A'}</span>
                         </div>
                         <h1 className="text-2xl font-bold leading-7 text-slate-900 sm:truncate sm:text-3xl sm:tracking-tight">
                             {rfp.title}
                         </h1>
                         <p className="mt-2 text-lg text-slate-600">
-                            Budget: {rfp.currency} {rfp.budget.toLocaleString()}
+                            Budget: {rfp.currency} {rfp.budget?.toLocaleString() || '0'}
                         </p>
                     </div>
                     <div className="mt-4 flex md:ml-4 md:mt-0">
@@ -189,7 +204,53 @@ function ComparisonView() {
                 </div>
             )}
 
-            {/* Proposals Grid */}
+            {/* Project Requirements */}
+            <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-6">
+                <details className="group">
+                    <summary className="flex items-center justify-between px-6 py-4 cursor-pointer bg-slate-50 hover:bg-slate-100 transition-colors">
+                        <h2 className="text-lg font-bold text-slate-900">Project Requirements</h2>
+                        <span className="ml-6 flex-shrink-0">
+                            <svg className="w-5 h-5 text-slate-500 group-open:rotate-180 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </span>
+                    </summary>
+                    <div className="px-6 py-4 border-t border-slate-200">
+                        <div className="mb-6">
+                            <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-2">Description</h3>
+                            <div className="prose prose-sm max-w-none text-slate-700 bg-slate-50 p-4 rounded-lg border border-slate-200">
+                                <p className="whitespace-pre-wrap">{rfp.description}</p>
+                            </div>
+                        </div>
+
+                        {rfp.items && rfp.items.length > 0 && (
+                            <div>
+                                <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-3">Required Items</h3>
+                                <div className="overflow-x-auto ring-1 ring-slate-200 rounded-lg">
+                                    <table className="min-w-full divide-y divide-slate-200">
+                                        <thead className="bg-slate-50">
+                                            <tr>
+                                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Item Name</th>
+                                                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Quantity</th>
+                                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Specifications</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="bg-white divide-y divide-slate-200">
+                                            {rfp.items?.map((item, idx) => (
+                                                <tr key={idx}>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">{item.itemName}</td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 text-right">{item.quantity}</td>
+                                                    <td className="px-6 py-4 text-sm text-slate-500">{item.specs}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </details>
+            </div>
             <div>
                 <h2 className="text-xl font-bold text-slate-900 mb-4">Received Proposals ({proposals.length})</h2>
                 {proposals.length === 0 ? (
@@ -413,13 +474,53 @@ function ComparisonView() {
                             </svg>
                         </div>
                         <div className="ml-5 w-full">
-                            <h2 className="text-xl font-bold text-indigo-900">AI Application Analysis</h2>
-                            <p className="mt-1 text-indigo-700">The system analyzes all proposals against your original requirements and budget.</p>
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <h2 className="text-xl font-bold text-indigo-900">AI Application Analysis</h2>
+                                    <p className="mt-1 text-indigo-700">The system analyzes all proposals against your original requirements and budget.</p>
+                                </div>
+                                {recommendation && (
+                                    <button
+                                        onClick={() => handleCompare(true)}
+                                        disabled={loadingComparison}
+                                        className="inline-flex items-center px-3 py-1.5 border border-indigo-200 shadow-sm text-xs font-medium rounded-full text-indigo-700 bg-white hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors disabled:opacity-50"
+                                        title="Force re-generation of analysis"
+                                    >
+                                        <svg className={`w-3 h-3 mr-1.5 ${loadingComparison ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                        </svg>
+                                        {loadingComparison ? 'Analyzing...' : 'Re-analyze'}
+                                    </button>
+                                )}
+                            </div>
+
+                            {isOutdated && (
+                                <div className="mt-4 bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-r-md">
+                                    <div className="flex">
+                                        <div className="flex-shrink-0">
+                                            <svg className="h-5 w-5 text-yellow-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                            </svg>
+                                        </div>
+                                        <div className="ml-3">
+                                            <p className="text-sm text-yellow-700">
+                                                <span className="font-bold">Heads up:</span> New proposals have arrived since this analysis was generated.
+                                                <button
+                                                    onClick={() => handleCompare(true)}
+                                                    className="ml-1 underline font-medium hover:text-yellow-600"
+                                                >
+                                                    Re-analyze now
+                                                </button> to include them.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
 
                             {!recommendation ? (
                                 <div className="mt-6">
                                     <button
-                                        onClick={handleCompare}
+                                        onClick={() => handleCompare(false)}
                                         disabled={loadingComparison}
                                         className="inline-flex items-center px-5 py-2.5 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors disabled:opacity-50"
                                     >
@@ -427,7 +528,7 @@ function ComparisonView() {
                                     </button>
                                 </div>
                             ) : (
-                                <div className="mt-6 bg-white rounded-xl p-6 border border-indigo-100 shadow-sm relative">
+                                <div className="mt-6 bg-white rounded-xl p-6 border border-indigo-100 shadow-sm relative group">
                                     <div className="absolute top-0 left-0 w-1 h-full bg-indigo-500 rounded-l-xl"></div>
                                     <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-2">Recommendation</h3>
                                     <p className="text-slate-800 whitespace-pre-line leading-relaxed">{recommendation}</p>

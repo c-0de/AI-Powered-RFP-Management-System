@@ -67,7 +67,7 @@ function Dashboard() {
                                         </span>
                                     )}
                                     <span className="text-xs text-slate-400">
-                                        {new Date(rfp.createdAt).toLocaleDateString()}
+                                        {rfp.createdAt ? new Date(rfp.createdAt).toLocaleDateString() : 'Date N/A'}
                                     </span>
                                 </div>
                             </div>
@@ -80,7 +80,7 @@ function Dashboard() {
 
                             <div className="flex items-center text-sm text-slate-600">
                                 <span className="font-medium mr-2">Budget:</span>
-                                {rfp.currency} {rfp.budget.toLocaleString()}
+                                {rfp.currency} {rfp.budget?.toLocaleString() || '0'}
                             </div>
                             <div className="flex items-center text-sm text-slate-600 mt-1">
                                 <span className="font-medium mr-2">Vendors:</span>
