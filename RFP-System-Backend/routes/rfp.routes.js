@@ -11,9 +11,8 @@ router.get('/', async (req, res) => {
     try {
         const rfps = await RFP.find().sort({ createdAt: -1 });
         res.json(rfps);
-        // res.json([]);
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        res.status(500).json({ message: `Failed to fetch RFPs: ${error.message}` });
     }
 });
 
@@ -21,11 +20,10 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
     try {
         const rfp = await RFP.findById(req.params.id).populate('selectedVendors');
-        if (!rfp) return res.status(404).json({ message: 'RFP not found' });
+        if (!rfp) return res.status(404).json({ message: `RFP with ID ${req.params.id} not found` });
         res.json(rfp);
-        // res.status(404).json({ message: 'RFP DB disabled' });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        res.status(500).json({ message: `Error retrieving RFP details: ${error.message}` });
     }
 });
 
@@ -34,9 +32,9 @@ router.post('/', async (req, res) => {
     try {
         const newRFP = new RFP(req.body);
         const savedRFP = await newRFP.save();
-        res.status(201).json(savedRFP);
+        res.status(201).json({ ...savedRFP.toObject(), message: "RFP created successfully" });
     } catch (error) {
-        res.status(400).json({ message: error.message });
+        res.status(400).json({ message: `Failed to create RFP: ${error.message}` });
     }
 });
 
@@ -68,7 +66,8 @@ router.post('/generate', async (req, res) => {
         const previewRFP = {
             ...structuredData,
             description: description,
-            status: 'Draft'
+            status: 'Draft',
+            message: "RFP analysis generated successfully"
         };
 
         res.json(previewRFP);
@@ -101,9 +100,9 @@ router.post('/:id/send', async (req, res) => {
 
         await Promise.all(emailPromises);
 
-        res.json({ message: 'RFP sent to vendors', vendorCount: vendors.length });
+        res.json({ message: `Successfully sent RFP invitations to ${vendors.length} vendors`, vendorCount: vendors.length });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        res.status(500).json({ message: `Failed to send RFP emails: ${error.message}` });
     }
 });
 
@@ -117,9 +116,9 @@ router.put('/:id/mark-read', async (req, res) => {
         rfp.unreadProposalsCount = 0;
         await rfp.save();
 
-        res.json({ message: 'Marked as read' });
+        res.json({ message: 'All proposals for this RFP marked as read' });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        res.status(500).json({ message: `Error marking proposals as read: ${error.message}` });
     }
 });
 

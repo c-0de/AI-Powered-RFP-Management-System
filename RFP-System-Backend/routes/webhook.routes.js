@@ -15,7 +15,7 @@ const upload = multer();
  */
 router.get('/', (req, res) => {
     console.log('*** GET request to /receive-mail received - Endpoint is accessible! ***');
-    res.status(200).send('Webhook endpoint is accessible. Please use POST for actual emails.');
+    res.status(200).send('Webhook endpoint is active and accessible. Please use POST for actual emails.');
 });
 
 /**
@@ -42,7 +42,7 @@ router.post('/', upload.any(), async (req, res) => {
 
         if (!emailMatch) {
             console.log("Error: Could not extract email from sender string");
-            return res.status(200).send('Invalid Sender Format');
+            return res.status(200).send('Invalid Sender Email Format');
         }
 
         const cleanEmail = emailMatch[0].toLowerCase(); // Case insensitive
@@ -54,7 +54,7 @@ router.post('/', upload.any(), async (req, res) => {
         if (!vendor) {
             console.log(`Error: Vendor not found for email ${cleanEmail}`);
             // Return 200 so Mailgun considers it delivered
-            return res.status(200).send('Vendor not recognized');
+            return res.status(200).send('Vendor email not recognized in system');
         }
         console.log(`Identified Vendor: ${vendor.companyName}`);
 
@@ -63,7 +63,7 @@ router.post('/', upload.any(), async (req, res) => {
         const rfp = await RFP.findOne({ status: 'Sent' }).sort({ createdAt: -1 });
         if (!rfp) {
             console.log('Error: No active (Sent) RFP found.');
-            return res.status(200).send('No active RFP found');
+            return res.status(200).send('No active (Sent) RFP found to attach proposal');
         }
         console.log(`Identified RFP: ${rfp.title}`);
 
@@ -168,10 +168,10 @@ router.post('/', upload.any(), async (req, res) => {
         console.log(`Updated RFP unread count.`);
 
         // Send 200 OK to acknowledge receipt
-        res.status(200).send('Webhook processed and proposal saved');
+        res.status(200).send('Webhook processed successfully: Proposal saved');
     } catch (error) {
         console.error('Error processing webhook:', error);
-        res.status(500).send('Internal Server Error');
+        res.status(500).send('Internal Server Error: Proposal processing failed');
     }
 });
 

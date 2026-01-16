@@ -14,7 +14,7 @@ router.get('/rfp/:rfpId', async (req, res) => {
         const proposals = await Proposal.find({ rfp: req.params.rfpId }).populate('vendor');
         res.json(proposals);
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        res.status(500).json({ message: `Failed to fetch proposals: ${error.message}` });
     }
 });
 
@@ -73,10 +73,10 @@ router.post('/check-emails', async (req, res) => {
             newProposals.push(proposal);
         }
 
-        res.json({ message: 'Check complete', newProposals: newProposals.length });
+        res.json({ message: 'Email check completed successfully', newProposals: newProposals.length });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: error.message });
+        res.status(500).json({ message: `Failed to check emails: ${error.message}` });
     }
 });
 
@@ -120,7 +120,7 @@ router.get('/rfp/:rfpId/compare', async (req, res) => {
         res.json({ recommendation, analysisId: analysis._id, analysisDate: analysis.createdAt, cached: false });
     } catch (error) {
         console.error("Comparison Error:", error);
-        res.status(500).json({ message: error.message });
+        res.status(500).json({ message: `AI comparison failed: ${error.message}` });
     }
 });
 
