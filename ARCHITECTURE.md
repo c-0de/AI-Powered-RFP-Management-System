@@ -5,32 +5,32 @@ This document provides a high-level overview of the system architecture, illustr
 ```mermaid
 graph TD
     subgraph "Frontend Layer"
-        UI[React Frontend (Vite)]
-        Components[UI Components]
-        Services[API Service (Axios)]
+        UI["React Frontend (Vite)"]
+        Components["UI Components"]
+        Services["API Service (Axios)"]
         UI --> Components
         Components --> Services
     end
 
     subgraph "Backend Layer"
-        API[Express.js Server]
-        Router[API Routes]
-        Controllers[Controllers/Handlers]
+        API["Express.js Server"]
+        Router["API Routes"]
+        Controllers["Controllers/Handlers"]
         API --> Router
         Router --> Controllers
     end
 
     subgraph "Data Layer"
-        DB[(MongoDB)]
-        Models[Mongoose Models]
+        DB[("MongoDB")]
+        Models["Mongoose Models"]
         Controllers --> Models
         Models --> DB
     end
 
     subgraph "External Services"
-        AI[AI Service (Groq / Gemini)]
-        Email[Mailgun (Email Service)]
-        Webhook[Webhook Receiver]
+        AI["AI Service (Groq / Gemini)"]
+        Email["Mailgun (Email Service)"]
+        Webhook["Webhook Receiver"]
     end
 
     Services -- "HTTP Requests (JSON)" --> API
